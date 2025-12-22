@@ -137,7 +137,7 @@ fun RegisterScreen(
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color(0xFF7FD4A8),
                             unfocusedContainerColor = Color(0xFF7FD4A8),
-                            focusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color(0xFF000000),
                             unfocusedIndicatorColor = Color.Transparent
                         ),
                         shape = RoundedCornerShape(dimensions.loginInputHeight / 2),

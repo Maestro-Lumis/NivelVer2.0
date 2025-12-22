@@ -3,7 +3,7 @@ package com.example.nivelver20.ui.screens.auth
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nivelver20.data.repository.RealmRepository
+import com.example.nivelver20.data.repository.SyncRepository // ИЗМЕНЕНО!
 import com.example.nivelver20.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +30,8 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    private val repository = RealmRepository()
+    // Используем SyncRepository - он координирует Realm и Firestore
+    private val repository = SyncRepository.getInstance(application)
     private val sessionManager = SessionManager.getInstance(application)
 
     fun onNameChange(newName: String) {
@@ -39,6 +40,10 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
     fun onPasswordChange(newPassword: String) {
         _uiState.update { it.copy(password = newPassword, errorMessage = null, successMessage = null) }
+    }
+
+    fun clearSuccessMessage() {
+        _uiState.update { it.copy(successMessage = null) }
     }
 
     fun registerUser() {
@@ -71,16 +76,26 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
-                // Создание нового пользователя
-                repository.createUser(username, password)
+                // Создание пользователя через SyncRepository
+                // Он автоматически сохранит локально и синхронизирует с облаком
+                val result = repository.createUser(username, password)
 
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        successMessage = "¡Registro exitoso! Ahora puedes iniciar sesión",
-                        nameUn = "",
-                        password = ""
-                    )
+                if (result.isSuccess) {
+                    sessionManager.login(username)
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            successMessage = "¡Registro exitoso! Estás autorizado"
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Error al crear usuario"
+                        )
+                    }
                 }
 
             } catch (e: Exception) {
@@ -96,6 +111,5 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
 
     override fun onCleared() {
         super.onCleared()
-        repository.close()
     }
 }

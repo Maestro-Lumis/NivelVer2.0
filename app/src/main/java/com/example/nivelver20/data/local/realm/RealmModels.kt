@@ -6,10 +6,11 @@ import org.mongodb.kbson.ObjectId
 
 class UserRealm : RealmObject {
     @PrimaryKey
-    var _id: ObjectId = ObjectId()  // Уникальный ID автоматически
+    var _id: ObjectId = ObjectId()
     var username: String = ""
-    var password: String = ""  // пароль
-    var nivel: String = "A0"   // начальный уровень A0
+    var password: String = ""
+    var nivel: String = "A0"
+    var lastModified: Long = 0L  // ДОБАВЛЕНО для синхронизации
 }
 
 // Модель слова для Vocabulario

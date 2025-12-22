@@ -3,7 +3,7 @@ package com.example.nivelver20.ui.screens.auth
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nivelver20.data.repository.RealmRepository
+import com.example.nivelver20.data.repository.SyncRepository // ИЗМЕНЕНО!
 import com.example.nivelver20.data.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,7 +30,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val repository = RealmRepository()
+    private val repository = SyncRepository.getInstance(application)
     private val sessionManager = SessionManager.getInstance(application)
 
     fun onEmailChange(newUsername: String) {
@@ -59,24 +59,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                // Проверка существования пользователя
-                val user = repository.getUserByUsername(username)
+                // Проверка пароля через SyncRepository
+                val user = repository.verifyUserPassword(username, password)
 
-                if (user == null) {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = "Usuario no encontrado"
-                        )
-                    }
-                    return@launch
-                }
-
-                // Проверка пароля
-                val isPasswordCorrect = repository.verifyUserPassword(username, password)
-
-                if (isPasswordCorrect != null) {
-                    // Успешная авторизация
+                if (user != null) {
                     sessionManager.login(username)
 
                     _uiState.update {
@@ -86,14 +72,13 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
 
-                    // Небольшая задержка для показа сообщения
                     kotlinx.coroutines.delay(1000)
                     onSuccess()
                 } else {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "Contraseña incorrecta"
+                            errorMessage = "Usuario o contraseña incorrecta"
                         )
                     }
                 }
@@ -111,6 +96,5 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     override fun onCleared() {
         super.onCleared()
-        repository.close()
     }
 }
