@@ -1,10 +1,12 @@
 package com.example.nivelver20.ui.screens.auth
 
+import android.annotation.SuppressLint
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nivelver20.data.repository.SyncRepository // ИЗМЕНЕНО!
+import com.example.nivelver20.data.repository.FirestoreRepository
 import com.example.nivelver20.data.session.SessionManager
+import com.example.nivelver20.utils.NetworkUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,9 +32,10 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    // Используем SyncRepository - он координирует Realm и Firestore
-    private val repository = SyncRepository.getInstance(application)
+    private val repository = FirestoreRepository.getInstance()
     private val sessionManager = SessionManager.getInstance(application)
+    @SuppressLint("StaticFieldLeak")
+    private val context = application.applicationContext
 
     fun onNameChange(newName: String) {
         _uiState.update { it.copy(nameUn = newName, errorMessage = null, successMessage = null) }
@@ -54,6 +57,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                 val username = _uiState.value.nameUn.trim()
                 val password = _uiState.value.password
 
+                // Валидация
                 if (username.isBlank() || password.isBlank()) {
                     _uiState.update {
                         it.copy(
@@ -64,9 +68,21 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
+                // Проверка интернета
+                if (!NetworkUtils.isNetworkAvailable(context)) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "Sin conexión a Internet.\nConéctate para registrarte."
+                        )
+                    }
+                    return@launch
+                }
+
                 // Проверка существования пользователя
-                val existingUser = repository.getUserByUsername(username)
-                if (existingUser != null) {
+                val existingUserResult = repository.getUserByUsername(username)
+
+                if (existingUserResult.isSuccess && existingUserResult.getOrNull() != null) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -76,11 +92,10 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
-                // Создание пользователя через SyncRepository
-                // Он автоматически сохранит локально и синхронизирует с облаком
-                val result = repository.createUser(username, password)
+                // Создание пользователя
+                val createResult = repository.createUser(username, password)
 
-                if (result.isSuccess) {
+                if (createResult.isSuccess) {
                     sessionManager.login(username)
 
                     _uiState.update {
@@ -93,7 +108,7 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "Error al crear usuario"
+                            errorMessage = "Error al crear usuario: ${createResult.exceptionOrNull()?.message}"
                         )
                     }
                 }

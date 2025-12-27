@@ -1,7 +1,9 @@
 package com.example.nivelver20.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.tasks.await
 
@@ -12,16 +14,33 @@ data class CloudUser(
     val timestamp: Long = 0L
 )
 
-class FirestoreRepository {
+class FirestoreRepository private constructor() {
+
+    companion object {
+        @Volatile
+        private var INSTANCE: FirestoreRepository? = null
+
+        fun getInstance(): FirestoreRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: FirestoreRepository().also { INSTANCE = it }
+            }
+        }
+    }
 
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
 
     init {
-        Log.d("FirestoreRepo", "Firestore initialized")
+        // Включаем offline persistence
+        val settings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        firestore.firestoreSettings = settings
+
+        Log.d("FirestoreRepo", "Firestore initialized with offline support")
     }
 
-    // Создать пользователя в облаке
+    // Создать пользователя
     suspend fun createUser(username: String, password: String, nivel: String = "A0"): Result<Unit> {
         return try {
             val userData = hashMapOf(
@@ -36,7 +55,7 @@ class FirestoreRepository {
                 .set(userData, SetOptions.merge())
                 .await()
 
-            Log.d("FirestoreRepo", "ser created: $username")
+            Log.d("FirestoreRepo", "User created: $username")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Create error: ${e.message}")
@@ -44,8 +63,8 @@ class FirestoreRepository {
         }
     }
 
-    //Получить пользователя из облака
-    suspend fun getUser(username: String): Result<CloudUser?> {
+    // Получить пользователя
+    suspend fun getUserByUsername(username: String): Result<CloudUser?> {
         return try {
             val doc = usersCollection
                 .document(username)
@@ -71,34 +90,30 @@ class FirestoreRepository {
         }
     }
 
-    // Получить всех пользователей из облака
-    suspend fun getAllUsers(): Result<List<CloudUser>> {
+    // Проверить пароль
+    suspend fun verifyUserPassword(username: String, password: String): Result<CloudUser?> {
         return try {
-            val snapshot = usersCollection.get().await()
+            val userResult = getUserByUsername(username)
 
-            val users = snapshot.documents.mapNotNull { doc ->
-                try {
-                    CloudUser(
-                        username = doc.getString("username") ?: return@mapNotNull null,
-                        password = doc.getString("password") ?: "",
-                        nivel = doc.getString("nivel") ?: "A0",
-                        timestamp = doc.getLong("timestamp") ?: 0L
-                    )
-                } catch (e: Exception) {
-                    Log.w("FirestoreRepo", "⚠Skip invalid user: ${e.message}")
-                    null
+            if (userResult.isSuccess) {
+                val user = userResult.getOrNull()
+                if (user != null && user.password == password) {
+                    Log.d("FirestoreRepo", "Password verified: $username")
+                    Result.success(user)
+                } else {
+                    Log.d("FirestoreRepo", "Invalid password: $username")
+                    Result.success(null)
                 }
+            } else {
+                Result.failure(userResult.exceptionOrNull()!!)
             }
-
-            Log.d("FirestoreRepo", "Fetched ${users.size} users")
-            Result.success(users)
         } catch (e: Exception) {
-            Log.e("FirestoreRepo", "GetAll error: ${e.message}")
+            Log.e("FirestoreRepo", "Verify error: ${e.message}")
             Result.failure(e)
         }
     }
 
-    //Обновить nivel пользователя
+    // Обновить nivel пользователя
     suspend fun updateUserNivel(username: String, newNivel: String): Result<Unit> {
         return try {
             usersCollection
@@ -119,22 +134,3 @@ class FirestoreRepository {
         }
     }
 }
-
-    // Удалить пользователя из облака (позже)
-    /*
-
-    suspend fun deleteUser(username: String): Result<Unit> {
-        return try {
-            usersCollection
-                .document(username)
-                .delete()
-                .await()
-
-            Log.d("FirestoreRepo", "User deleted: $username")
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Log.e("FirestoreRepo", "Delete error: ${e.message}")
-            Result.failure(e)
-        }
-    }
-}*/

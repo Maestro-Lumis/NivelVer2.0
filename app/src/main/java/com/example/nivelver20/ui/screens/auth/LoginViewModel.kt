@@ -1,10 +1,12 @@
 package com.example.nivelver20.ui.screens.auth
 
+import android.annotation.SuppressLint
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.nivelver20.data.repository.SyncRepository // ИЗМЕНЕНО!
+import com.example.nivelver20.data.repository.FirestoreRepository
 import com.example.nivelver20.data.session.SessionManager
+import com.example.nivelver20.utils.NetworkUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,15 +25,18 @@ data class LoginUiState(
     val perfilButton: String = "PERFIL",
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val isOfflineMode: Boolean = false
 )
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(LoginUiState())
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
 
-    private val repository = SyncRepository.getInstance(application)
+    private val repository = FirestoreRepository.getInstance()
     private val sessionManager = SessionManager.getInstance(application)
+    @SuppressLint("StaticFieldLeak")
+    private val context = application.applicationContext
 
     fun onEmailChange(newUsername: String) {
         _uiState.update { it.copy(nameUn = newUsername, errorMessage = null, successMessage = null) }
@@ -49,6 +54,7 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                 val username = _uiState.value.nameUn.trim()
                 val password = _uiState.value.password
 
+                // Валидация
                 if (username.isBlank() || password.isBlank()) {
                     _uiState.update {
                         it.copy(
@@ -59,26 +65,40 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                     return@launch
                 }
 
-                // Проверка пароля через SyncRepository
-                val user = repository.verifyUserPassword(username, password)
+                val isOffline = !NetworkUtils.isNetworkAvailable(context)
 
-                if (user != null) {
+                // Проверка пароля (работает с offline кэшем Firebase)
+                val verifyResult = repository.verifyUserPassword(username, password)
+
+                if (verifyResult.isSuccess && verifyResult.getOrNull() != null) {
                     sessionManager.login(username)
+
+                    val message = if (isOffline) {
+                        "¡Bienvenido, $username! (Modo sin conexión)"
+                    } else {
+                        "¡Bienvenido, $username!"
+                    }
 
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            successMessage = "¡Bienvenido, $username!"
+                            successMessage = message,
+                            isOfflineMode = isOffline
                         )
                     }
 
                     kotlinx.coroutines.delay(1000)
                     onSuccess()
+
                 } else {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            errorMessage = "Usuario o contraseña incorrecta"
+                            errorMessage = if (isOffline) {
+                                "Sin conexión. Conéctate para iniciar sesión por primera vez."
+                            } else {
+                                "Usuario o contraseña incorrecta"
+                            }
                         )
                     }
                 }
