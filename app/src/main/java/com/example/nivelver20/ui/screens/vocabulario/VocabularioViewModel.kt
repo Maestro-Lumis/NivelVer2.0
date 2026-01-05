@@ -1,15 +1,34 @@
 package com.example.nivelver20.ui.screens.vocabulario
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.nivelver20.data.repository.FirestoreRepository
+import com.example.nivelver20.data.session.SessionManager
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+enum class CardState {
+    NORMAL,      // Обычное состояние
+    SELECTED,    // Выбрана
+    CORRECT,     // Правильная пара (зеленый)
+    INCORRECT,   // Неправильная пара (красный)
+    MATCHED      // Уже совпала (серый, заморожена)
+}
 
 data class WordCard(
+    val id: Int,              // Уникальный ID карточки
+    val pairId: Int,          // ID пары (одинаковый для испанского и русского)
     val spanish: String,
     val russian: String,
-    val isRevealed: Boolean = false
+    val isSpanish: Boolean,   // true = испанская, false = русская
+    val state: CardState = CardState.NORMAL
 )
 
 data class VocabularioUiState(
@@ -17,75 +36,394 @@ data class VocabularioUiState(
     val nivel: String = "A1",
     val userName: String = "NOMBRE",
     val title: String = "VOCABULARIO",
-    // 8 испанских слов
-    val spanishWords: List<WordCard> = listOf(
-        WordCard("palabrnvjenrkjgvnejkgnejngvienvienvien", "слово"),
-        WordCard("casa", "дом"),
-        WordCard("agua", "вода"),
-        WordCard("tiempo", "время"),
-        WordCard("hombre", "мужчина"),
-        WordCard("mujer", "женщина"),
-        WordCard("niño", "ребёнок"),
-        WordCard("vida", "жизнь")
-    ),
-    // 8 русских слов
-    val russianWords: List<WordCard> = listOf(
-        WordCard("persona", "человек"),
-        WordCard("día", "день"),
-        WordCard("mano", "рука"),
-        WordCard("mundo", "мир"),
-        WordCard("trabajo", "работа"),
-        WordCard("país", "страна"),
-        WordCard("año", "год"),
-        WordCard("vez", "раз")
-    ),
-    val correctCount: Int = 25,
-    val incorrectCount: Int = 25,
+    val spanishWords: List<WordCard> = emptyList(),
+    val russianWords: List<WordCard> = emptyList(),
+    val selectedSpanish: Int? = null,  // ID выбранной испанской карточки
+    val selectedRussian: Int? = null,  // ID выбранной русской карточки
+    val correctCount: Int = 0,
+    val incorrectCount: Int = 0,
     val testButton: String = "TEST",
-    val perfilButton: String = "PERFIL"
+    val perfilButton: String = "PERFIL",
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null,
+    val currentRound: Int = 1,         // Текущий раунд (1-7)
+    val totalRounds: Int = 7,          // Всего раундов
+    val isChecking: Boolean = false    // Идет проверка пары (блокировка кликов)
 )
 
-class VocabularioViewModel : ViewModel() {
+class VocabularioViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(VocabularioUiState())
     val uiState: StateFlow<VocabularioUiState> = _uiState.asStateFlow()
 
-    fun toggleSpanishCard(index: Int) {
-        _uiState.update { currentState ->
-            val updatedCards = currentState.spanishWords.toMutableList()
-            if (index in updatedCards.indices) {
-                updatedCards[index] = updatedCards[index].copy(
-                    isRevealed = !updatedCards[index].isRevealed
-                )
-            }
-            currentState.copy(spanishWords = updatedCards)
+    private val repository = FirestoreRepository.getInstance()
+    private val sessionManager = SessionManager.getInstance(application)
+
+    // Список всех доступных слов для уровня
+    private var allAvailableWords: List<com.example.nivelver20.data.repository.VocabularioWord> = emptyList()
+    // Индекс для отслеживания использованных слов
+    private var usedWordsStartIndex = 0
+
+    private var checkingJob: Job? = null
+
+    init {
+        val username = sessionManager.getCurrentUser()
+        if (username != null) {
+            _uiState.update { it.copy(userName = username) }
+            loadUserNivel(username)
         }
     }
 
-    fun toggleRussianCard(index: Int) {
-        _uiState.update { currentState ->
-            val updatedCards = currentState.russianWords.toMutableList()
-            if (index in updatedCards.indices) {
-                updatedCards[index] = updatedCards[index].copy(
-                    isRevealed = !updatedCards[index].isRevealed
-                )
+    private fun loadUserNivel(username: String) {
+        viewModelScope.launch {
+            val userResult = repository.getUserByUsername(username)
+            if (userResult.isSuccess) {
+                val user = userResult.getOrNull()
+                if (user != null) {
+                    _uiState.update { it.copy(nivel = user.nivel) }
+                    loadAllWordsForNivel(user.nivel)
+                }
             }
-            currentState.copy(russianWords = updatedCards)
         }
     }
 
-    fun incrementCorrect() {
-        _uiState.update { it.copy(correctCount = it.correctCount + 1) }
+    /**
+     * Загружаем ВСЕ слова для уровня один раз
+     */
+    private fun loadAllWordsForNivel(nivel: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            val result = repository.getWordsByNivel(nivel)
+
+            if (result.isSuccess) {
+                val words = result.getOrNull() ?: emptyList()
+
+                if (words.isEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "No hay palabras para este nivel"
+                        )
+                    }
+                    return@launch
+                }
+
+                // Проверяем, достаточно ли слов для 7 раундов (56 слов)
+                if (words.size < 56) {
+                    Log.w("VocabularioVM", "Недостаточно слов: ${words.size}, будем использовать повторно")
+                }
+
+                // Перемешиваем и сохраняем все слова
+                allAvailableWords = words.shuffled()
+                usedWordsStartIndex = 0
+
+                // Загружаем первые 8 слов
+                loadNextWordSet()
+
+                _uiState.update { it.copy(isLoading = false, nivel = nivel) }
+
+                Log.d("VocabularioVM", "Loaded ${words.size} words total for nivel $nivel")
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = "Error al cargar palabras"
+                    )
+                }
+            }
+        }
     }
 
-    fun incrementIncorrect() {
-        _uiState.update { it.copy(incorrectCount = it.incorrectCount + 1) }
+    // Загружает следующие 8 слов для нового раунда
+    private fun loadNextWordSet() {
+        if (allAvailableWords.isEmpty()) {
+            Log.e("VocabularioVM", "No words available")
+            return
+        }
+
+        // Берем следующие 8 слов (или с начала, если закончились)
+        val wordsToUse = mutableListOf<com.example.nivelver20.data.repository.VocabularioWord>()
+
+        for (i in 0 until 8) {
+            val index = (usedWordsStartIndex + i) % allAvailableWords.size
+            wordsToUse.add(allAvailableWords[index])
+        }
+
+        usedWordsStartIndex = (usedWordsStartIndex + 8) % allAvailableWords.size
+
+        // Создаем испанские карточки
+        val spanishCards = wordsToUse.mapIndexed { index, word ->
+            WordCard(
+                id = index,
+                pairId = index,
+                spanish = word.es,
+                russian = word.ru,
+                isSpanish = true,
+                state = CardState.NORMAL
+            )
+        }
+
+        // Создаем русские карточки и перемешиваем их
+        val russianCards = wordsToUse.mapIndexed { index, word ->
+            WordCard(
+                id = index + 100, // Разные ID для русских карточек
+                pairId = index,
+                spanish = word.es,
+                russian = word.ru,
+                isSpanish = false,
+                state = CardState.NORMAL
+            )
+        }.shuffled()
+
+        _uiState.update {
+            it.copy(
+                spanishWords = spanishCards,
+                russianWords = russianCards,
+                selectedSpanish = null,
+                selectedRussian = null
+            )
+        }
+
+        Log.d("VocabularioVM", "Loaded round ${_uiState.value.currentRound} / ${_uiState.value.totalRounds}")
     }
 
-    fun setUserName(name: String) {
-        _uiState.update { it.copy(userName = name) }
+    fun loadWords(nivel: String) {
+        // Сбрасываем счетчики и раунды
+        _uiState.update {
+            it.copy(
+                correctCount = 0,
+                incorrectCount = 0,
+                currentRound = 1
+            )
+        }
+        usedWordsStartIndex = 0
+        loadAllWordsForNivel(nivel)
+    }
+
+    // Нажатие на испанскую карточку
+    fun onSpanishCardClick(index: Int) {
+        val card = _uiState.value.spanishWords.getOrNull(index) ?: return
+
+        // Игнорируем, если карточка уже сопоставлена
+        if (card.state == CardState.MATCHED) return
+
+        // ОТМЕНЯЕМ текущую анимацию, если она идет
+        checkingJob?.cancel()
+        checkingJob = null
+
+        // Сбрасываем состояние проверки
+        _uiState.update { it.copy(isChecking = false) }
+
+        viewModelScope.launch {
+            // Возвращаем все карточки с состоянием CORRECT/INCORRECT в NORMAL
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                            it.copy(state = CardState.NORMAL)
+                        else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                            it.copy(state = CardState.NORMAL)
+                        else it
+                    }
+                )
+            }
+
+            // Снимаем выделение с предыдущей
+            _uiState.update { state ->
+                val updatedCards = state.spanishWords.map {
+                    if (it.state == CardState.SELECTED) it.copy(state = CardState.NORMAL)
+                    else it
+                }
+                state.copy(
+                    spanishWords = updatedCards,
+                    selectedSpanish = null
+                )
+            }
+
+            // Выделяем текущую
+            _uiState.update { state ->
+                val updatedCards = state.spanishWords.toMutableList()
+                updatedCards[index] = updatedCards[index].copy(state = CardState.SELECTED)
+                state.copy(
+                    spanishWords = updatedCards,
+                    selectedSpanish = card.id
+                )
+            }
+
+            // Проверяем пару, если обе выбраны
+            checkMatch()
+        }
+    }
+
+    // Нажатие на русскую карточку
+    fun onRussianCardClick(index: Int) {
+        val card = _uiState.value.russianWords.getOrNull(index) ?: return
+
+        // Игнорируем, если карточка уже сопоставлена
+        if (card.state == CardState.MATCHED) return
+
+        // ОТМЕНЯЕМ текущую анимацию, если она идет
+        checkingJob?.cancel()
+        checkingJob = null
+
+        // Сбрасываем состояние проверки
+        _uiState.update { it.copy(isChecking = false) }
+
+        viewModelScope.launch {
+            // Возвращаем все карточки с состоянием CORRECT/INCORRECT в NORMAL
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                            it.copy(state = CardState.NORMAL)
+                        else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                            it.copy(state = CardState.NORMAL)
+                        else it
+                    }
+                )
+            }
+
+            // Снимаем выделение с предыдущей
+            _uiState.update { state ->
+                val updatedCards = state.russianWords.map {
+                    if (it.state == CardState.SELECTED) it.copy(state = CardState.NORMAL)
+                    else it
+                }
+                state.copy(
+                    russianWords = updatedCards,
+                    selectedRussian = null
+                )
+            }
+
+            // Выделяем текущую
+            _uiState.update { state ->
+                val updatedCards = state.russianWords.toMutableList()
+                updatedCards[index] = updatedCards[index].copy(state = CardState.SELECTED)
+                state.copy(
+                    russianWords = updatedCards,
+                    selectedRussian = card.id
+                )
+            }
+
+            // Проверяем пару, если обе выбраны
+            checkMatch()
+        }
+    }
+
+    //Проверка совпадения пары
+    private suspend fun checkMatch() {
+        val selectedSpanishId = _uiState.value.selectedSpanish ?: return
+        val selectedRussianId = _uiState.value.selectedRussian ?: return
+
+        val spanishCard = _uiState.value.spanishWords.find { it.id == selectedSpanishId } ?: return
+        val russianCard = _uiState.value.russianWords.find { it.id == selectedRussianId } ?: return
+
+        // Проверяем, совпадают ли pairId
+        val isCorrect = spanishCard.pairId == russianCard.pairId
+
+        if (isCorrect) {
+            Log.d("VocabularioVM", "Correct match: ${spanishCard.spanish} = ${russianCard.russian}")
+
+            // Показываем зеленый
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.id == selectedSpanishId) it.copy(state = CardState.CORRECT) else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.id == selectedRussianId) it.copy(state = CardState.CORRECT) else it
+                    },
+                    correctCount = state.correctCount + 1
+                )
+            }
+
+            // Через 1 секунду делаем серыми (MATCHED)
+            delay(300)
+
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.id == selectedSpanishId) it.copy(state = CardState.MATCHED) else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.id == selectedRussianId) it.copy(state = CardState.MATCHED) else it
+                    },
+                    selectedSpanish = null,
+                    selectedRussian = null
+                )
+            }
+
+            // Проверяем, все ли пары найдены
+            checkIfRoundComplete()
+
+        } else {
+            Log.d("VocabularioVM", "Incorrect match")
+
+            // Показываем красный
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.id == selectedSpanishId) it.copy(state = CardState.INCORRECT) else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.id == selectedRussianId) it.copy(state = CardState.INCORRECT) else it
+                    },
+                    incorrectCount = state.incorrectCount + 1
+                )
+            }
+
+            // Через 1 секунду возвращаем в обычное состояние
+            delay(300)
+
+            _uiState.update { state ->
+                state.copy(
+                    spanishWords = state.spanishWords.map {
+                        if (it.id == selectedSpanishId) it.copy(state = CardState.NORMAL) else it
+                    },
+                    russianWords = state.russianWords.map {
+                        if (it.id == selectedRussianId) it.copy(state = CardState.NORMAL) else it
+                    },
+                    selectedSpanish = null,
+                    selectedRussian = null
+                )
+            }
+        }
+    }
+
+    // Проверяем, завершен ли раунд (все 8 пар найдены)
+
+    private suspend fun checkIfRoundComplete() {
+        val allMatched = _uiState.value.spanishWords.all { it.state == CardState.MATCHED }
+
+        if (allMatched) {
+            val currentRound = _uiState.value.currentRound
+            val totalRounds = _uiState.value.totalRounds
+
+            Log.d("VocabularioVM", "Round $currentRound completed!")
+
+            if (currentRound < totalRounds) {
+                // Есть еще раунды - загружаем новые слова
+                delay(600) // Небольшая пауза перед загрузкой новых слов
+
+                _uiState.update { it.copy(currentRound = currentRound + 1) }
+                loadNextWordSet()
+
+                Log.d("VocabularioVM", "Starting round ${currentRound + 1}")
+            } else {
+                // Все раунды завершены
+                Log.d("VocabularioVM", "All rounds completed! Total: ${_uiState.value.correctCount} correct, ${_uiState.value.incorrectCount} incorrect")
+                // Здесь можно добавить показ финального экрана или диалога
+            }
+        }
     }
 
     fun setNivel(nivel: String) {
-        _uiState.update { it.copy(nivel = nivel) }
+        loadWords(nivel)
     }
 }

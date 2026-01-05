@@ -100,36 +100,30 @@ fun AppNavigation(
             )
         }
 
-        // Экран авторизации - редирект если уже авторизован
+        // Экран авторизации
         composable(Routes.Login.route) {
-            LaunchedEffect(isLoggedIn) {
-                if (isLoggedIn) {
+            LoginScreen(
+                onLoginSuccess = {
                     navController.navigate(Routes.Perfil.route) {
                         popUpTo(Routes.Login.route) { inclusive = true }
                     }
-                }
-            }
-
-            if (!isLoggedIn) {
-                LoginScreen(
-                    onLoginSuccess = {
-                        navController.navigate(Routes.Perfil.route) {
-                            popUpTo(Routes.Login.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateToRegister = {
-                        navController.navigate(Routes.Register.route)
-                    },
-                    onNavigateToTest = {
-                        navController.navigate(Routes.Main.route) {
-                            popUpTo(Routes.Main.route) { inclusive = true }
-                        }
-                    },
-                    onNavigateToPerfil = {
-                        // Уже на экране логина, ничего не делаем
+                },
+                onNavigateToRegister = {
+                    navController.navigate(Routes.Register.route)
+                },
+                onNavigateToTest = {
+                    navController.navigate(Routes.Main.route) {
+                        popUpTo(Routes.Main.route) { inclusive = true }
                     }
-                )
-            }
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route)
+                    } else {
+                        // Уже на экране логина
+                    }
+                }
+            )
         }
 
         // Экран регистрации

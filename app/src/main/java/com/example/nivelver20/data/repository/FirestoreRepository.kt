@@ -14,6 +14,12 @@ data class CloudUser(
     val timestamp: Long = 0L
 )
 
+data class VocabularioWord(
+    val es: String = "",  // испанское слово
+    val ru: String = "",  // русское слово
+    val nivel: String = ""
+)
+
 class FirestoreRepository private constructor() {
 
     companion object {
@@ -29,6 +35,8 @@ class FirestoreRepository private constructor() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
+    private val vocabularioCollection = firestore.collection("vocabulario")
+
 
     init {
         // Включаем offline persistence
@@ -130,6 +138,36 @@ class FirestoreRepository private constructor() {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Update error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getWordsByNivel(nivel: String): Result<List<VocabularioWord>> {
+        return try {
+            Log.d("FirestoreRepo", "📚 Loading words for nivel: $nivel")
+
+            val snapshot = vocabularioCollection
+                .whereEqualTo("nivel", nivel)
+                .get()
+                .await()
+
+            val words = snapshot.documents.mapNotNull { doc ->
+                try {
+                    VocabularioWord(
+                        es = doc.getString("es") ?: "",
+                        ru = doc.getString("ru") ?: "",
+                        nivel = doc.getString("nivel") ?: ""
+                    )
+                } catch (e: Exception) {
+                    Log.w("FirestoreRepo", "⚠Skip invalid word: ${e.message}")
+                    null
+                }
+            }
+
+            Log.d("FirestoreRepo", "Loaded ${words.size} words for nivel $nivel")
+            Result.success(words)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Get words error: ${e.message}")
             Result.failure(e)
         }
     }

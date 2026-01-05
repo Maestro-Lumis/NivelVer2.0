@@ -87,7 +87,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     }
 
-                    kotlinx.coroutines.delay(1000)
+                    kotlinx.coroutines.delay(1500)
+
+                    sessionManager.login(username)
                     onSuccess()
 
                 } else {

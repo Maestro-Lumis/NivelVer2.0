@@ -92,16 +92,16 @@ class RegisterViewModel(application: Application) : AndroidViewModel(application
                     return@launch
                 }
 
-                // Создание пользователя
+                // Создание пользователя (БЕЗ автоматического входа)
                 val createResult = repository.createUser(username, password)
 
                 if (createResult.isSuccess) {
-                    sessionManager.login(username)
-
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            successMessage = "¡Registro exitoso! Estás autorizado"
+                            successMessage = "¡Registro exitoso! Ahora puedes iniciar sesión",
+                            nameUn = "",  // Очистить поля
+                            password = ""
                         )
                     }
                 } else {

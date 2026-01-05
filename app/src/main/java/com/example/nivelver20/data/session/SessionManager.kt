@@ -39,6 +39,10 @@ class SessionManager private constructor(context: Context) {
         return prefs.getString("current_username", null)
     }
 
+    fun getCurrentUser(): String? {
+        return getCurrentUsername()
+    }
+
     // Войти в систему
     fun login(username: String) {
         prefs.edit().apply {
