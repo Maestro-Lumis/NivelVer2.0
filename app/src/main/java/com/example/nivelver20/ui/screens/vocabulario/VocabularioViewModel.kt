@@ -16,10 +16,10 @@ import kotlinx.coroutines.launch
 
 enum class CardState {
     NORMAL,      // Обычное состояние
-    SELECTED,    // Выбрана
-    CORRECT,     // Правильная пара (зеленый)
-    INCORRECT,   // Неправильная пара (красный)
-    MATCHED      // Уже совпала (серый, заморожена)
+    SELECTED,    // Выбрана (синяя рамка)
+    SHOWING_SUCCESS, // Показываем зеленую рамку поверх серого фона (400мс)
+    INCORRECT,   // Неправильная пара (красная рамка)
+    MATCHED      // Серый фон, уже сопоставлена (без рамки)
 }
 
 data class WordCard(
@@ -47,8 +47,12 @@ data class VocabularioUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val currentRound: Int = 1,         // Текущий раунд (1-7)
-    val totalRounds: Int = 7,          // Всего раундов
-    val isChecking: Boolean = false    // Идет проверка пары (блокировка кликов)
+    val totalRounds: Int = 1,          // Всего раундов
+    val isChecking: Boolean = false,   // Идет проверка пары (блокировка кликов)
+    val showExitDialog: Boolean = false, // Показать диалог выхода
+    val isTestComplete: Boolean = false,  // Тест завершен
+    val pendingNavigation: (() -> Unit)? = null,  // Отложенная навигация после подтверждения
+    val resultTextVocabulario: String = "VOCABULARIO"
 )
 
 class VocabularioViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,11 +73,11 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
         val username = sessionManager.getCurrentUser()
         if (username != null) {
             _uiState.update { it.copy(userName = username) }
-            loadUserNivel(username)
+            //loadUserNivel(username)
         }
     }
 
-    private fun loadUserNivel(username: String) {
+    /*private fun loadUserNivel(username: String) {
         viewModelScope.launch {
             val userResult = repository.getUserByUsername(username)
             if (userResult.isSuccess) {
@@ -84,11 +88,10 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
                 }
             }
         }
-    }
+    }*/
 
-    /**
-     * Загружаем ВСЕ слова для уровня один раз
-     */
+    // Загружаем ВСЕ слова для уровня один раз
+
     private fun loadAllWordsForNivel(nivel: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
@@ -202,29 +205,31 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
     // Нажатие на испанскую карточку
     fun onSpanishCardClick(index: Int) {
+        // БЛОКИРУЕМ клики, если идет проверка правильного ответа
+        if (_uiState.value.isChecking) return
+
         val card = _uiState.value.spanishWords.getOrNull(index) ?: return
 
         // Игнорируем, если карточка уже сопоставлена
         if (card.state == CardState.MATCHED) return
 
-        // ОТМЕНЯЕМ текущую анимацию, если она идет
-        checkingJob?.cancel()
-        checkingJob = null
-
-        // Сбрасываем состояние проверки
-        _uiState.update { it.copy(isChecking = false) }
+        // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
+        if (!_uiState.value.isChecking) {
+            checkingJob?.cancel()
+            checkingJob = null
+        }
 
         viewModelScope.launch {
-            // Возвращаем все карточки с состоянием CORRECT/INCORRECT в NORMAL
+            // Возвращаем только INCORRECT карточки в NORMAL
             _uiState.update { state ->
                 state.copy(
                     spanishWords = state.spanishWords.map {
-                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                        if (it.state == CardState.INCORRECT)
                             it.copy(state = CardState.NORMAL)
                         else it
                     },
                     russianWords = state.russianWords.map {
-                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                        if (it.state == CardState.INCORRECT)
                             it.copy(state = CardState.NORMAL)
                         else it
                     }
@@ -260,29 +265,31 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
     // Нажатие на русскую карточку
     fun onRussianCardClick(index: Int) {
+        // БЛОКИРУЕМ клики, если идет проверка правильного ответа
+        if (_uiState.value.isChecking) return
+
         val card = _uiState.value.russianWords.getOrNull(index) ?: return
 
         // Игнорируем, если карточка уже сопоставлена
         if (card.state == CardState.MATCHED) return
 
-        // ОТМЕНЯЕМ текущую анимацию, если она идет
-        checkingJob?.cancel()
-        checkingJob = null
-
-        // Сбрасываем состояние проверки
-        _uiState.update { it.copy(isChecking = false) }
+        // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
+        if (!_uiState.value.isChecking) {
+            checkingJob?.cancel()
+            checkingJob = null
+        }
 
         viewModelScope.launch {
-            // Возвращаем все карточки с состоянием CORRECT/INCORRECT в NORMAL
+            // Возвращаем только INCORRECT карточки в NORMAL
             _uiState.update { state ->
                 state.copy(
                     spanishWords = state.spanishWords.map {
-                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                        if (it.state == CardState.INCORRECT)
                             it.copy(state = CardState.NORMAL)
                         else it
                     },
                     russianWords = state.russianWords.map {
-                        if (it.state == CardState.CORRECT || it.state == CardState.INCORRECT)
+                        if (it.state == CardState.INCORRECT)
                             it.copy(state = CardState.NORMAL)
                         else it
                     }
@@ -330,33 +337,36 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
         if (isCorrect) {
             Log.d("VocabularioVM", "Correct match: ${spanishCard.spanish} = ${russianCard.russian}")
 
-            // Показываем зеленый
+            // 1. СРАЗУ делаем СЕРЫМИ (MATCHED) + показываем зеленую рамку (SHOWING_SUCCESS)
             _uiState.update { state ->
                 state.copy(
                     spanishWords = state.spanishWords.map {
-                        if (it.id == selectedSpanishId) it.copy(state = CardState.CORRECT) else it
+                        if (it.id == selectedSpanishId) it.copy(state = CardState.SHOWING_SUCCESS) else it
                     },
                     russianWords = state.russianWords.map {
-                        if (it.id == selectedRussianId) it.copy(state = CardState.CORRECT) else it
+                        if (it.id == selectedRussianId) it.copy(state = CardState.SHOWING_SUCCESS) else it
                     },
-                    correctCount = state.correctCount + 1
-                )
-            }
-
-            // Через 1 секунду делаем серыми (MATCHED)
-            delay(300)
-
-            _uiState.update { state ->
-                state.copy(
-                    spanishWords = state.spanishWords.map {
-                        if (it.id == selectedSpanishId) it.copy(state = CardState.MATCHED) else it
-                    },
-                    russianWords = state.russianWords.map {
-                        if (it.id == selectedRussianId) it.copy(state = CardState.MATCHED) else it
-                    },
+                    correctCount = state.correctCount + 1,
                     selectedSpanish = null,
                     selectedRussian = null
                 )
+            }
+
+            // 2. Запускаем анимацию в фоне (НЕ блокируем UI)
+            viewModelScope.launch {
+                // Через 400мс убираем зеленую рамку, оставляем только серый фон
+                delay(400)
+
+                _uiState.update { state ->
+                    state.copy(
+                        spanishWords = state.spanishWords.map {
+                            if (it.id == selectedSpanishId) it.copy(state = CardState.MATCHED) else it
+                        },
+                        russianWords = state.russianWords.map {
+                            if (it.id == selectedRussianId) it.copy(state = CardState.MATCHED) else it
+                        }
+                    )
+                }
             }
 
             // Проверяем, все ли пары найдены
@@ -365,7 +375,7 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
         } else {
             Log.d("VocabularioVM", "Incorrect match")
 
-            // Показываем красный
+            // Показываем красную рамку
             _uiState.update { state ->
                 state.copy(
                     spanishWords = state.spanishWords.map {
@@ -378,8 +388,8 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
                 )
             }
 
-            // Через 1 секунду возвращаем в обычное состояние
-            delay(300)
+            // Через 700мс возвращаем в обычное состояние
+            delay(400)
 
             _uiState.update { state ->
                 state.copy(
@@ -396,10 +406,18 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    // Проверяем, завершен ли раунд (все 8 пар найдены)
+   //Проверяем, завершен ли раунд (все 8 пар найдены)
+    private var onNavigateToResults: ((String, Int, Int) -> Unit)? = null
 
+    fun setResultsCallback(callback: (String, Int, Int) -> Unit) {
+        onNavigateToResults = callback
+    }
+
+    // Обновите checkIfRoundComplete():
     private suspend fun checkIfRoundComplete() {
-        val allMatched = _uiState.value.spanishWords.all { it.state == CardState.MATCHED }
+        val allMatched = _uiState.value.spanishWords.all {
+            it.state == CardState.MATCHED || it.state == CardState.SHOWING_SUCCESS
+        }
 
         if (allMatched) {
             val currentRound = _uiState.value.currentRound
@@ -408,22 +426,57 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
             Log.d("VocabularioVM", "Round $currentRound completed!")
 
             if (currentRound < totalRounds) {
-                // Есть еще раунды - загружаем новые слова
-                delay(600) // Небольшая пауза перед загрузкой новых слов
-
+                delay(1500)
                 _uiState.update { it.copy(currentRound = currentRound + 1) }
                 loadNextWordSet()
-
                 Log.d("VocabularioVM", "Starting round ${currentRound + 1}")
             } else {
-                // Все раунды завершены
-                Log.d("VocabularioVM", "All rounds completed! Total: ${_uiState.value.correctCount} correct, ${_uiState.value.incorrectCount} incorrect")
-                // Здесь можно добавить показ финального экрана или диалога
+                // Все раунды завершены - переход на экран результатов
+                Log.d("VocabularioVM", "All rounds completed!")
+                delay(500)
+                onNavigateToResults?.invoke(
+                    _uiState.value.nivel,
+                    _uiState.value.correctCount,
+                    _uiState.value.incorrectCount
+                )
             }
         }
     }
 
     fun setNivel(nivel: String) {
-        loadWords(nivel)
+        _uiState.update { it.copy(nivel = nivel) } // Сохраняем nivel в state
+        loadWords(nivel) // Загружаем слова
+    }
+
+    //Запрос на выход (показываем диалог)
+    fun requestExit(onConfirm: () -> Unit) {
+        _uiState.update {
+            it.copy(
+                showExitDialog = true,
+                pendingNavigation = onConfirm
+            )
+        }
+    }
+
+    //Подтверждение выхода
+    fun confirmExit() {
+        val pendingNav = _uiState.value.pendingNavigation
+        _uiState.update {
+            it.copy(
+                showExitDialog = false,
+                pendingNavigation = null
+            )
+        }
+        pendingNav?.invoke()
+    }
+
+    //Отмена выхода
+    fun cancelExit() {
+        _uiState.update {
+            it.copy(
+                showExitDialog = false,
+                pendingNavigation = null
+            )
+        }
     }
 }

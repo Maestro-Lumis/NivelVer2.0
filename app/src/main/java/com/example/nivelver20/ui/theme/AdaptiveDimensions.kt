@@ -1,6 +1,7 @@
 package com.example.nivelver20.ui.theme
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
@@ -43,6 +44,8 @@ data class AdaptiveDimensions(
     val titleFontSize: Float,
     val buttonFontSize: Float,
     val bottomButtonFontSize: Float,
+
+    val exitDialog: Float,
 
     // Для экрана выбора уровня
     val nivelItemSpacing: Dp,
@@ -141,6 +144,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelTitleFontSize = 28f,
                 nivelSideTextFontSize = 28f,
 
+                // Диалог
+                exitDialog = 14f,
+
                 // Для экрана авторизации
                 loginTitleFontSize = 28f,
                 loginLabelFontSize = 16f,
@@ -194,6 +200,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelCircleHeight = 80.dp,
                 nivelTitleFontSize = 32f,
                 nivelSideTextFontSize = 32f,
+
+                // Диалог
+                exitDialog = 14f,
 
                 // Для экрана авторизации
                 loginTitleFontSize = 32f,
@@ -249,6 +258,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelTitleFontSize = 36f,
                 nivelSideTextFontSize = 36f,
 
+                // Диалог
+                exitDialog = 14f,
+
                 // Для экрана авторизации
                 loginTitleFontSize = 36f,
                 loginLabelFontSize = 20f,
@@ -302,6 +314,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelTitleFontSize = 38f,
                 nivelSideTextFontSize = 38f,
 
+                // Диалог
+                exitDialog = 19f,
+
                 // Для экрана авторизации
                 loginTitleFontSize = 38f,
                 loginLabelFontSize = 22f,
@@ -352,6 +367,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelCircleHeight = 145.dp,
                 nivelTitleFontSize = 42f,
                 nivelSideTextFontSize = 42f,
+
+                // Диалог
+                exitDialog = 22f,
 
                 // Для экрана авторизации
                 loginTitleFontSize = 48f,
@@ -407,6 +425,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelTitleFontSize = 66f,
                 nivelSideTextFontSize = 66f,
 
+                // Диалог
+                exitDialog = 25f,
+
                 // Для экрана авторизации
                 loginTitleFontSize = 55f,
                 loginLabelFontSize = 35f,
@@ -460,6 +481,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelCircleHeight = 170.dp,
                 nivelTitleFontSize = 54f,
                 nivelSideTextFontSize = 54f,
+
+                // Диалог
+                exitDialog = 27f,
 
                 // Для экрана авторизации
                 loginTitleFontSize = 59f,

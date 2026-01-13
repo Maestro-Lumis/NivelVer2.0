@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -109,6 +110,10 @@ fun LoginScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+                        textStyle = TextStyle(
+                            color = Color.Black,
+                            fontSize = dimensions.loginLabelFontSize.sp
+                        ),
                         shape = RoundedCornerShape(dimensions.loginInputHeight / 2),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true
@@ -138,6 +143,10 @@ fun LoginScreen(
                             unfocusedContainerColor = Color(0xFF7FD4A8),
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        textStyle = TextStyle(
+                            color = Color.Black,
+                            fontSize = dimensions.loginLabelFontSize.sp
                         ),
                         shape = RoundedCornerShape(dimensions.loginInputHeight / 2),
                         visualTransformation = PasswordVisualTransformation(),

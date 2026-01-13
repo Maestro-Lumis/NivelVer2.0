@@ -7,7 +7,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,22 +30,39 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
+import androidx.activity.compose.BackHandler
 
 @Composable
 fun VocabularioScreen(
-    nivel: String = "A1",
+    nivel : String,
     onNavigateToTest: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
+    onNavigateToResults: (String, Int, Int) -> Unit = { _, _, _ -> },
     viewModel: VocabularioViewModel = viewModel()
 ) {
     val dimensions = rememberAdaptiveDimensions()
     val uiState by viewModel.uiState.collectAsState()
 
     // Загружаем слова при первом запуске
-    LaunchedEffect(Unit) {
-        if (uiState.spanishWords.isEmpty()) {
-            viewModel.loadWords(nivel)
+    LaunchedEffect(nivel) {
+        viewModel.setNivel(nivel)
+        viewModel.setResultsCallback { n, correct, incorrect ->
+            onNavigateToResults(n, correct, incorrect)
         }
+    }
+
+    // Перехватываем системную кнопку "Назад"
+    BackHandler {
+        viewModel.requestExit(onNavigateToTest)
+    }
+
+    // Показываем диалог выхода
+    if (uiState.showExitDialog) {
+        ExitDialog(
+            onConfirm = { viewModel.confirmExit() },
+            onDismiss = { viewModel.cancelExit() },
+            dimensions = dimensions
+        )
     }
 
     Box(
@@ -61,8 +83,8 @@ fun VocabularioScreen(
         if (uiState.errorMessage != null) {
             Text(
                 text = uiState.errorMessage ?: "",
-                color = Color.Red,
-                fontSize = 16.sp,
+                color = Color(0xFFC42D2C),
+                fontSize = dimensions.vocabularioTitleFontSize.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(32.dp)
             )
@@ -95,7 +117,7 @@ fun VocabularioScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = uiState.nivelLabel,
+                    text = uiState.nivel,
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFa3b944)
@@ -366,20 +388,130 @@ fun VocabularioScreen(
             ) {
                 BottomButton(
                     text = uiState.testButton,
-                    onClick = onNavigateToTest,
+                    onClick = { viewModel.requestExit(onNavigateToTest) },
                     dimensions = dimensions,
                     modifier = Modifier.weight(1f)
                 )
 
                 BottomButton(
                     text = uiState.perfilButton,
-                    onClick = onNavigateToPerfil,
+                    onClick = { viewModel.requestExit(onNavigateToPerfil) },
                     dimensions = dimensions,
                     modifier = Modifier.weight(1f)
                 )
             }
         }
     }
+}
+
+@Composable
+private fun ExitDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF003D5B),
+        title = {
+            Text(
+                text = "¿SALIR DEL TEST?",
+                fontSize = dimensions.loginLabelFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFa3b944),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Text(
+                text = "¿Estás seguro de que quieres salir?\nTu progreso se perderá.",
+                fontSize = (dimensions.exitDialog).sp,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        confirmButton = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
+            ) {
+                // Кнопка CONTINUAR (зеленая)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(dimensions.bottomButtonHeight)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF48C553),
+                                    Color(0xFF48C553)
+                                )
+                            ),
+                            shape = RoundedCornerShape(dimensions.buttonCornerRadius)
+                        )
+                ) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(2.dp),
+                        shape = RoundedCornerShape(dimensions.buttonCornerRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF02214a)
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "continuar",
+                            fontSize = dimensions.exitDialog.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFf2edd0),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                // Кнопка SÍ, SALIR (красная)
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(dimensions.bottomButtonHeight)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFFC42D2C),
+                                    Color(0xFFC42D2C)
+                                )
+                            ),
+                            shape = RoundedCornerShape(dimensions.buttonCornerRadius)
+                        )
+                ) {
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(2.dp),
+                        shape = RoundedCornerShape(dimensions.buttonCornerRadius),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF02214a)
+                        ),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Text(
+                            text = "si, salir",
+                            fontSize = dimensions.exitDialog.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFf2edd0),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+        },
+        dismissButton = null
+    )
 }
 
 @Composable
@@ -391,23 +523,27 @@ private fun WordCardItem(
 ) {
     if (card == null) return
 
-    // Определяем цвет границы в зависимости от состояния
     val borderColor = when (card.state) {
         CardState.NORMAL -> Color.Transparent
-        CardState.SELECTED -> Color(0xCB02214A) // Голубой - выбрана
-        CardState.CORRECT -> Color(0xFF48C553)  // Зеленый - правильно
-        CardState.INCORRECT -> Color(0xFFC42D2C) // Красный - неправильно
-        CardState.MATCHED -> Color.Gray          // Серый - уже сопоставлена
+        CardState.SELECTED -> Color(0xCB02214A)
+        CardState.SHOWING_SUCCESS -> Color(0xFF48C553)
+        CardState.INCORRECT -> Color(0xFFC42D2C)
+        CardState.MATCHED -> Color.Transparent
     }
 
-    // Определяем цвет фона
     val backgroundColor = when (card.state) {
-        CardState.MATCHED -> Color(0xFFCCCCCC) // Серый фон для сопоставленных
+        CardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
+        CardState.MATCHED -> Color(0xFFCCCCCC)
         else -> Color(0xFFf2edd0)
     }
 
-    // Определяем, можно ли нажимать
-    val isClickable = card.state != CardState.MATCHED
+    val textColor = when (card.state) {
+        CardState.SHOWING_SUCCESS -> Color.Gray
+        CardState.MATCHED -> Color.Gray
+        else -> Color(0xFF003D5B)
+    }
+
+    val isClickable = card.state != CardState.MATCHED && card.state != CardState.SHOWING_SUCCESS
 
     Box(
         modifier = modifier
@@ -432,7 +568,7 @@ private fun WordCardItem(
             text = if (card.isSpanish) card.spanish else card.russian,
             fontSize = dimensions.vocabularioWordFontSize.sp,
             fontWeight = FontWeight.Bold,
-            color = if (card.state == CardState.MATCHED) Color.Gray else Color(0xFF003D5B),
+            color = textColor,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 8.dp)
         )

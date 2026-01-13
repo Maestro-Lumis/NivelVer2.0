@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -35,6 +37,7 @@ fun RegisterScreen(
 ) {
     val dimensions = rememberAdaptiveDimensions()
     val uiState by viewModel.uiState.collectAsState()
+    val focusManager = LocalFocusManager.current  // Для скрытия клавиатуры
 
     Box(
         modifier = Modifier
@@ -109,6 +112,10 @@ fun RegisterScreen(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+                        textStyle = TextStyle(
+                            color = Color.Black,  // ЧЕРНЫЙ ЦВЕТ ТЕКСТА
+                            fontSize = dimensions.loginLabelFontSize.sp
+                        ),
                         shape = RoundedCornerShape(dimensions.loginInputHeight / 2),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                         singleLine = true
@@ -140,6 +147,10 @@ fun RegisterScreen(
                             focusedIndicatorColor = Color(0xFF000000),
                             unfocusedIndicatorColor = Color.Transparent
                         ),
+                        textStyle = TextStyle(
+                            color = Color.Black,
+                            fontSize = dimensions.loginLabelFontSize.sp
+                        ),
                         shape = RoundedCornerShape(dimensions.loginInputHeight / 2),
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -170,7 +181,10 @@ fun RegisterScreen(
                         )
                 ) {
                     Button(
-                        onClick = { viewModel.registerUser() },
+                        onClick = {
+                            focusManager.clearFocus()
+                            viewModel.registerUser()
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(2.dp),
@@ -179,7 +193,7 @@ fun RegisterScreen(
                             containerColor = Color(0xFF003D5B)
                         ),
                         contentPadding = PaddingValues(0.dp),
-                        enabled = !uiState.isLoading  //блокировка при загрузке
+                        enabled = !uiState.isLoading
                     ) {
                         if (uiState.isLoading) {
                             CircularProgressIndicator(
@@ -211,7 +225,7 @@ fun RegisterScreen(
                     )
                 }
 
-                // Показать успех - ВАЖНО!
+                // Показать успех
                 uiState.successMessage?.let { success ->
                     Text(
                         text = success,
