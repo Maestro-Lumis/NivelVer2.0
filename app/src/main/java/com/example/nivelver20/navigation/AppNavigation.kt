@@ -28,6 +28,7 @@ import com.example.nivelver20.ui.screens.audio.AudioScreen
 import com.example.nivelver20.ui.screens.auth.LoginScreen
 import com.example.nivelver20.ui.screens.auth.RegisterScreen
 import com.example.nivelver20.ui.screens.lectura.LecturaScreen
+import com.example.nivelver20.ui.screens.lectura.LecturaResultsScreen
 import com.example.nivelver20.ui.screens.perfil.PerfilScreen
 import com.example.nivelver20.ui.screens.vocabulario.VocabularioResultsScreen
 import com.example.nivelver20.ui.screens.vocabulario.VocabularioScreen
@@ -210,7 +211,7 @@ fun AppNavigation(
                         navController.navigate(Routes.Login.route)
                     }
                 },
-                onNavigateToResults = { nivel, correct, incorrect ->  // НОВЫЙ CALLBACK
+                onNavigateToResults = { nivel, correct, incorrect ->
                     navController.navigate(
                         "${Routes.VocabularioResults.route}/$nivel/$correct/$incorrect"
                     ) {
@@ -238,7 +239,7 @@ fun AppNavigation(
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onNavigateToPerfil = {  // ДОБАВЛЕНО
+                onNavigateToPerfil = {
                     if (isLoggedIn) {
                         navController.navigate(Routes.Perfil.route) {
                             popUpTo(0) { inclusive = true }
@@ -265,6 +266,45 @@ fun AppNavigation(
                         navController.navigate(Routes.Perfil.route)
                     } else {
                         navController.navigate(Routes.Login.route)
+                    }
+                },
+                onNavigateToResults = { nivel, correct, incorrect ->
+                    navController.navigate(
+                        "${Routes.LecturaResults.route}/$nivel/$correct/$incorrect"
+                    ) {
+                        popUpTo(Routes.Lectura.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // маршрут для результатов lectura
+        composable(
+            route = Routes.LecturaResults.route + "/{nivel}/{correctCount}/{incorrectCount}"
+        ) { backStackEntry ->
+            val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
+            val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
+            val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
+
+            LecturaResultsScreen(
+                nivel = nivel,
+                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                correctCount = correctCount,
+                incorrectCount = incorrectCount,
+                onNavigateToMain = {
+                    navController.navigate(Routes.Main.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 }
             )

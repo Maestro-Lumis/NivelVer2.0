@@ -47,7 +47,7 @@ data class VocabularioUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val currentRound: Int = 1,         // Текущий раунд (1-7)
-    val totalRounds: Int = 1,          // Всего раундов
+    val totalRounds: Int = 7,          // Всего раундов
     val isChecking: Boolean = false,   // Идет проверка пары (блокировка кликов)
     val showExitDialog: Boolean = false, // Показать диалог выхода
     val isTestComplete: Boolean = false,  // Тест завершен

@@ -10,6 +10,7 @@ sealed class Routes(val route: String) {
     object Vocabulario : Routes("vocabulario")
     object VocabularioResults : Routes("vocabulario_results")
     object Lectura : Routes("lectura")
+    object LecturaResults : Routes("lectura_results")
     object Audio : Routes ("audio")
     object Grammatica : Routes("grammatica")
     object Nivel : Routes("nivel")

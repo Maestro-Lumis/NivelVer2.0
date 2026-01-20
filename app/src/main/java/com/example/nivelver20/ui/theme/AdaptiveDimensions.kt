@@ -77,7 +77,9 @@ data class AdaptiveDimensions(
 
     // Для экрана Audio
     val audioVolumeUp: Dp,
-    val lineHeightForAudAndLect: TextUnit
+    val lineHeightForAudAndLect: TextUnit,
+    val answerItemMinHeight: Dp,
+    val audioWordFontSize: Float,
 
 
 )
@@ -171,6 +173,8 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 // Для экрана Audio
                 audioVolumeUp = 50.dp,
                 lineHeightForAudAndLect = 25.sp,
+                answerItemMinHeight = 22.dp,
+                audioWordFontSize = 7f,
 
                 // Ошибки
 
@@ -228,6 +232,8 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 // Для экрана Audio
                 audioVolumeUp = 90.dp,
                 lineHeightForAudAndLect = 30.sp,
+                answerItemMinHeight = 25.dp,
+                audioWordFontSize = 16f,
 
                 // Ошибки
 
@@ -284,7 +290,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Для экрана Audio
                 audioVolumeUp = 150.dp,
-                lineHeightForAudAndLect = 35.sp
+                lineHeightForAudAndLect = 35.sp,
+                answerItemMinHeight = 37.dp,
+                audioWordFontSize = 33f,
 
                 // Ошибки
             )
@@ -340,7 +348,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Для экрана Audio
                 audioVolumeUp = 250.dp,
-                lineHeightForAudAndLect = 40.sp
+                lineHeightForAudAndLect = 40.sp,
+                answerItemMinHeight = 39.dp,
+                audioWordFontSize = 20f,
             )
 
             ScreenType.SMALL_TABLET -> AdaptiveDimensions(
@@ -394,7 +404,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Для экрана Audio
                 audioVolumeUp = 250.dp,
-                lineHeightForAudAndLect = 45.sp
+                lineHeightForAudAndLect = 45.sp,
+                answerItemMinHeight = 42.dp,
+                audioWordFontSize = 38f,
 
                 // Ошибки
 
@@ -451,7 +463,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Для экрана Audio
                 audioVolumeUp = 250.dp,
-                lineHeightForAudAndLect = 55.sp
+                lineHeightForAudAndLect = 55.sp,
+                answerItemMinHeight = 45.dp,
+                audioWordFontSize = 42f,
 
                 // Ошибки
 
@@ -509,6 +523,8 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 // Для экрана Audio
                 audioVolumeUp = 500.dp,
                 lineHeightForAudAndLect = 60.sp,
+                answerItemMinHeight = 50.dp,
+                audioWordFontSize = 46f,
 
                 // Ошибки
 

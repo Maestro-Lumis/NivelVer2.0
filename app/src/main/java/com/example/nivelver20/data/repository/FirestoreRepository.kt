@@ -15,9 +15,21 @@ data class CloudUser(
 )
 
 data class VocabularioWord(
-    val es: String = "",  // испанское слово
-    val ru: String = "",  // русское слово
+    val es: String = "",
+    val ru: String = "",
     val nivel: String = ""
+)
+
+data class LecturaOpcion(
+    val correcta: Boolean = false,
+    val texto: String = ""
+)
+
+data class LecturaQuestionFirestore(
+    val nivel: String = "",
+    val opciones: List<LecturaOpcion> = emptyList(),
+    val pregunta: String = "",
+    val texto: String = ""
 )
 
 class FirestoreRepository private constructor() {
@@ -36,11 +48,12 @@ class FirestoreRepository private constructor() {
     private val firestore = FirebaseFirestore.getInstance()
     private val usersCollection = firestore.collection("users")
     private val vocabularioCollection = firestore.collection("vocabulario")
+    private val lecturaCollection = firestore.collection("lectura")
 
 
     init {
         // Включаем offline persistence
-        val settings = FirebaseFirestoreSettings.Builder()
+        @Suppress("DEPRECATION") val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
         firestore.firestoreSettings = settings
@@ -142,9 +155,10 @@ class FirestoreRepository private constructor() {
         }
     }
 
+    // ========== VOCABULARIO ==========
     suspend fun getWordsByNivel(nivel: String): Result<List<VocabularioWord>> {
         return try {
-            Log.d("FirestoreRepo", "📚 Loading words for nivel: $nivel")
+            Log.d("FirestoreRepo", "Loading words for nivel: $nivel")
 
             val snapshot = vocabularioCollection
                 .whereEqualTo("nivel", nivel)
@@ -168,6 +182,73 @@ class FirestoreRepository private constructor() {
             Result.success(words)
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Get words error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // ========== LECTURA ==========
+    // Получить все вопросы lectura для указанного уровня
+    suspend fun getLecturaQuestionsByNivel(nivel: String): Result<List<LecturaQuestionFirestore>> {
+        return try {
+            Log.d("FirestoreRepo", "Loading lectura questions for nivel: $nivel")
+
+            val snapshot = lecturaCollection
+                .whereEqualTo("nivel", nivel)
+                .get()
+                .await()
+
+            val questions = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val data = doc.data ?: return@mapNotNull null
+
+                    val pregunta = data["pregunta"] as? String ?: ""
+                    val texto = data["texto"] as? String ?: ""
+                    val nivelValue = data["nivel"] as? String ?: ""
+
+                    // Парсим опции
+                    val opcionesData = data["opciones"] as? List<*> ?: emptyList<Any>()
+                    val opciones = opcionesData.mapNotNull { opcion ->
+                        val opcionMap = opcion as? Map<*, *> ?: return@mapNotNull null
+                        LecturaOpcion(
+                            correcta = opcionMap["correcta"] as? Boolean ?: false,
+                            texto = opcionMap["texto"] as? String ?: ""
+                        )
+                    }
+
+                    LecturaQuestionFirestore(
+                        nivel = nivelValue,
+                        opciones = opciones,
+                        pregunta = pregunta,
+                        texto = texto
+                    )
+                } catch (e: Exception) {
+                    Log.w("FirestoreRepo", "⚠ Skip invalid lectura question: ${e.message}")
+                    null
+                }
+            }
+
+            Log.d("FirestoreRepo", "Loaded ${questions.size} lectura questions for nivel $nivel")
+            Result.success(questions)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Get lectura questions error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // Получить текст для чтения по вопросу (резервный метод, если текст нужен отдельно)
+    suspend fun getLecturaText(pregunta: String): Result<String> {
+        return try {
+            val snapshot = lecturaCollection
+                .whereEqualTo("pregunta", pregunta)
+                .limit(1)
+                .get()
+                .await()
+
+            val texto = snapshot.documents.firstOrNull()?.getString("texto") ?: ""
+            Log.d("FirestoreRepo", "Loaded text for question: $pregunta")
+            Result.success(texto)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Get lectura text error: ${e.message}")
             Result.failure(e)
         }
     }
