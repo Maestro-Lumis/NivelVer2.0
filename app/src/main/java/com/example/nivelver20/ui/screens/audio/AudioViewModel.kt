@@ -120,11 +120,16 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         val question = allAvailableQuestions[questionIndex]
         usedQuestionsStartIndex++
 
-        val answerItems = question.answers.mapIndexed { index, text ->
+        // ПЕРЕМЕШИВАЕМ ОТВЕТЫ
+        val answersWithOriginalIndex = question.answers.mapIndexed { index, text ->
+            Triple(index, text, index == question.correctAnswerIndex)
+        }.shuffled()
+
+        val answerItems = answersWithOriginalIndex.mapIndexed { newIndex, (_, text, isCorrect) ->
             AudioAnswerItem(
-                id = index,
+                id = newIndex,
                 text = text,
-                isCorrect = index == question.correctAnswerIndex,
+                isCorrect = isCorrect,
                 state = AudioAnswerState.NORMAL
             )
         }

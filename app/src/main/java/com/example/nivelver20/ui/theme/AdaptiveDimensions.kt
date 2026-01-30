@@ -221,7 +221,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 vocabularioCardHeight = 70.dp,
                 vocabularioCardCornerRadius = 14.dp,
                 vocabularioTitleFontSize = 24f,
-                vocabularioWordFontSize = 20f,
+                vocabularioWordFontSize = 18f,
                 vocabularioCounterFontSize = 24f,
                 vocabularioCardSpacing = 12.dp,
                 vocabularioPadding = 18.dp,

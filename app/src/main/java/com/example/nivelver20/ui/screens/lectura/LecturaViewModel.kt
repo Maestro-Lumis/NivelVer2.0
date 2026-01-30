@@ -51,7 +51,7 @@ data class LecturaUiState(
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
     val currentRound: Int = 1,
-    val totalRounds: Int = 7,
+    val totalRounds: Int = 5,
     val isChecking: Boolean = false,
     val showExitDialog: Boolean = false,
     val pendingNavigation: (() -> Unit)? = null
