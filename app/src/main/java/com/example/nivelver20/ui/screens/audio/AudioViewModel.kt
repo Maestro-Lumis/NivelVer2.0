@@ -15,11 +15,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class AudioAnswerState {
-    NORMAL,      // Обычное состояние
-    SELECTED,    // Выбран (синяя рамка)
-    SHOWING_SUCCESS, // Показываем зеленую рамку поверх серого фона (400мс)
-    INCORRECT,   // Неправильный ответ (красная рамка)
-    MATCHED      // Серый фон, уже правильно ответили (без рамки)
+    NORMAL,
+    SELECTED,
+    SHOWING_SUCCESS,
+    INCORRECT,
+    MATCHED
 }
 
 data class AudioQuestion(
@@ -47,6 +47,8 @@ data class AudioUiState(
     val selectedAnswer: Int? = null,
     val isPlaying: Boolean = false,
     val currentPosition: Float = 0f,
+    val currentTimeText: String = "0:00", // Текущее время (0:15)
+    val durationText: String = "0:00",     // Длительность (1:23)
     val correctCount: Int = 0,
     val incorrectCount: Int = 0,
     val testButton: String = "TEST",
@@ -72,11 +74,35 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     private var checkingJob: Job? = null
     private var onNavigateToResults: ((String, Int, Int) -> Unit)? = null
 
+    private var mediaPlayer: android.media.MediaPlayer? = null
+    private var progressUpdateJob: Job? = null
+
     init {
         val username = sessionManager.getCurrentUser()
         if (username != null) {
             _uiState.update { it.copy(userName = username) }
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        releaseMediaPlayer()
+    }
+
+    private fun releaseMediaPlayer() {
+        progressUpdateJob?.cancel()
+        progressUpdateJob = null
+
+        mediaPlayer?.apply {
+            try {
+                if (isPlaying) stop()
+                reset()
+                release()
+            } catch (e: Exception) {
+                Log.e("AudioVM", "Error releasing MediaPlayer: ${e.message}")
+            }
+        }
+        mediaPlayer = null
     }
 
     fun setResultsCallback(callback: (String, Int, Int) -> Unit) {
@@ -87,26 +113,52 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
 
-            val mockQuestions = generateMockQuestions()
+            val result = repository.getAudioQuestionsByNivel(nivel)
 
-            if (mockQuestions.isEmpty()) {
+            if (result.isSuccess) {
+                val firestoreQuestions = result.getOrNull() ?: emptyList()
+
+                if (firestoreQuestions.isEmpty()) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            errorMessage = "No hay preguntas para este nivel"
+                        )
+                    }
+                    return@launch
+                }
+
+                val questions = firestoreQuestions.map { firestoreQuestion ->
+                    val correctIndex = firestoreQuestion.opciones.indexOfFirst { it.correcta }
+
+                    AudioQuestion(
+                        audioUrl = firestoreQuestion.audioUrl,
+                        question = firestoreQuestion.pregunta,
+                        answers = firestoreQuestion.opciones.map { it.texto },
+                        correctAnswerIndex = correctIndex
+                    )
+                }
+
+                if (questions.size < 7) {
+                    Log.w("AudioVM", "Недостаточно вопросов: ${questions.size}")
+                }
+
+                allAvailableQuestions = questions.shuffled()
+                usedQuestionsStartIndex = 0
+
+                loadNextQuestion()
+
+                _uiState.update { it.copy(isLoading = false, nivel = nivel) }
+
+                Log.d("AudioVM", "Loaded ${questions.size} questions")
+            } else {
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        errorMessage = "No hay preguntas para este nivel"
+                        errorMessage = "Error al cargar preguntas"
                     )
                 }
-                return@launch
             }
-
-            allAvailableQuestions = mockQuestions.shuffled()
-            usedQuestionsStartIndex = 0
-
-            loadNextQuestion()
-
-            _uiState.update { it.copy(isLoading = false, nivel = nivel) }
-
-            Log.d("AudioVM", "Loaded ${mockQuestions.size} questions for nivel $nivel")
         }
     }
 
@@ -120,7 +172,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         val question = allAvailableQuestions[questionIndex]
         usedQuestionsStartIndex++
 
-        // ПЕРЕМЕШИВАЕМ ОТВЕТЫ
         val answersWithOriginalIndex = question.answers.mapIndexed { index, text ->
             Triple(index, text, index == question.correctAnswerIndex)
         }.shuffled()
@@ -134,6 +185,8 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
 
+        releaseMediaPlayer()
+
         _uiState.update {
             it.copy(
                 audioUrl = question.audioUrl,
@@ -142,11 +195,15 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 selectedAnswer = null,
                 isChecking = false,
                 isPlaying = false,
-                currentPosition = 0f
+                currentPosition = 0f,
+                currentTimeText = "0:00",
+                durationText = "0:00"
             )
         }
 
-        Log.d("AudioVM", "Loaded question ${_uiState.value.currentRound} / ${_uiState.value.totalRounds}")
+        prepareMediaPlayer(question.audioUrl)
+
+        Log.d("AudioVM", "Loaded round ${_uiState.value.currentRound}/${_uiState.value.totalRounds}")
     }
 
     fun loadQuestions(nivel: String) {
@@ -162,22 +219,18 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onAnswerClick(index: Int) {
-        // БЛОКИРУЕМ клики, если идет проверка правильного ответа
         if (_uiState.value.isChecking) return
 
         val answer = _uiState.value.answers.getOrNull(index) ?: return
 
-        // Игнорируем, если ответ уже выбран правильно
         if (answer.state == AudioAnswerState.MATCHED) return
 
-        // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
         if (!_uiState.value.isChecking) {
             checkingJob?.cancel()
             checkingJob = null
         }
 
         viewModelScope.launch {
-            // Возвращаем только INCORRECT ответы в NORMAL
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
@@ -188,7 +241,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // Снимаем выделение с предыдущего
             _uiState.update { state ->
                 val updatedAnswers = state.answers.map {
                     if (it.state == AudioAnswerState.SELECTED) it.copy(state = AudioAnswerState.NORMAL)
@@ -200,7 +252,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // Выделяем текущий
             _uiState.update { state ->
                 val updatedAnswers = state.answers.toMutableList()
                 updatedAnswers[index] = updatedAnswers[index].copy(state = AudioAnswerState.SELECTED)
@@ -210,7 +261,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // Проверяем ответ
             checkAnswer()
         }
     }
@@ -224,7 +274,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         if (isCorrect) {
             Log.d("AudioVM", "Correct answer!")
 
-            // 1. СРАЗУ делаем СЕРЫМ (MATCHED) + показываем зеленую рамку (SHOWING_SUCCESS)
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
@@ -235,9 +284,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // 2. Запускаем анимацию в фоне (НЕ блокируем UI)
             viewModelScope.launch {
-                // Через 400мс убираем зеленую рамку, оставляем только серый фон
                 delay(400)
 
                 _uiState.update { state ->
@@ -249,13 +296,11 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
-            // Проверяем, не последний ли это раунд
             checkIfTestComplete()
 
         } else {
             Log.d("AudioVM", "Incorrect answer!")
 
-            // Показываем красную рамку
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
@@ -265,7 +310,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
 
-            // Через 400мс возвращаем в обычное состояние
             delay(400)
 
             _uiState.update { state ->
@@ -342,87 +386,162 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePlayPause() {
-        _uiState.update { it.copy(isPlaying = !it.isPlaying) }
-        // TODO: Здесь будет логика воспроизведения аудио
+        val player = mediaPlayer ?: run {
+            Log.e("AudioVM", "MediaPlayer is NULL!")
+            return
+        }
+
+        try {
+            // Проверяем, что MediaPlayer готов
+            val duration = player.duration
+            if (duration <= 0) {
+                Log.e("AudioVM", "MediaPlayer not ready yet! Duration: $duration")
+                return
+            }
+
+            if (_uiState.value.isPlaying) {
+                // ПАУЗА
+                player.pause()
+                progressUpdateJob?.cancel()
+                _uiState.update { it.copy(isPlaying = false) }
+                Log.d("AudioVM", "⏸️ Paused at ${_uiState.value.currentTimeText}")
+            } else {
+                // PLAY
+                if (_uiState.value.currentPosition >= 0.99f) {
+                    player.seekTo(0)
+                    _uiState.update {
+                        it.copy(
+                            currentPosition = 0f,
+                            currentTimeText = "0:00"
+                        )
+                    }
+                    Log.d("AudioVM", "Restarting from beginning")
+                }
+
+                player.start()
+                startProgressUpdates()
+                _uiState.update { it.copy(isPlaying = true) }
+                Log.d("AudioVM", "Playing from ${_uiState.value.currentTimeText}")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioVM", "Error in togglePlayPause: ${e.message}")
+            e.printStackTrace()
+            _uiState.update { it.copy(isPlaying = false) }
+        }
     }
 
     fun onSliderValueChange(value: Float) {
+        // Когда пользователь двигает слайдер - обновляем только UI
         _uiState.update { it.copy(currentPosition = value) }
-        // TODO: Здесь будет логика перемотки аудио
     }
 
-    private fun generateMockQuestions(): List<AudioQuestion> {
-        return listOf(
-            AudioQuestion(
-                audioUrl = "audio1.mp3",
-                question = "¿Qué escuchaste en el audio?",
-                answers = listOf(
-                    "Una conversación sobre el clima",
-                    "Una conversación sobre comida",
-                    "Una conversación sobre viajes"
-                ),
-                correctAnswerIndex = 1
-            ),
-            AudioQuestion(
-                audioUrl = "audio2.mp3",
-                question = "¿De qué hablan las personas?",
-                answers = listOf(
-                    "De sus familias",
-                    "De su trabajo",
-                    "De deportes"
-                ),
-                correctAnswerIndex = 0
-            ),
-            AudioQuestion(
-                audioUrl = "audio3.mp3",
-                question = "¿Cuál es el tema principal?",
-                answers = listOf(
-                    "La música",
-                    "El cine",
-                    "Los libros"
-                ),
-                correctAnswerIndex = 2
-            ),
-            AudioQuestion(
-                audioUrl = "audio4.mp3",
-                question = "¿Qué planean hacer?",
-                answers = listOf(
-                    "Ir al parque",
-                    "Ir al cine",
-                    "Ir a un restaurante"
-                ),
-                correctAnswerIndex = 0
-            ),
-            AudioQuestion(
-                audioUrl = "audio5.mp3",
-                question = "¿Qué opinan sobre el tema?",
-                answers = listOf(
-                    "Están de acuerdo",
-                    "No están de acuerdo",
-                    "No tienen opinión"
-                ),
-                correctAnswerIndex = 1
-            ),
-            AudioQuestion(
-                audioUrl = "audio6.mp3",
-                question = "¿Cuándo van a encontrarse?",
-                answers = listOf(
-                    "Mañana",
-                    "Hoy",
-                    "La próxima semana"
-                ),
-                correctAnswerIndex = 0
-            ),
-            AudioQuestion(
-                audioUrl = "audio7.mp3",
-                question = "¿Qué necesitan comprar?",
-                answers = listOf(
-                    "Ropa",
-                    "Comida",
-                    "Libros"
-                ),
-                correctAnswerIndex = 1
-            )
-        )
+    fun onSliderValueChangeFinished() {
+        // Когда пользователь отпустил слайдер - перематываем аудио
+        val player = mediaPlayer ?: return
+        val duration = player.duration
+        val value = _uiState.value.currentPosition
+
+        if (duration > 0) {
+            val position = (value * duration).toInt()
+            player.seekTo(position)
+
+            // Обновляем время
+            _uiState.update {
+                it.copy(
+                    currentTimeText = formatTime(position)
+                )
+            }
+
+            Log.d("AudioVM", "Seeked to: ${formatTime(position)}")
+        }
+    }
+
+    private fun prepareMediaPlayer(audioUrl: String) {
+        Log.d("AudioVM", "Preparing media player for URL: $audioUrl")
+
+        try {
+            mediaPlayer = android.media.MediaPlayer().apply {
+                setDataSource(audioUrl)
+
+                setOnPreparedListener { player ->
+                    val duration = player.duration
+
+                    // ВАЖНО: Обновляем UI только если длительность > 0
+                    if (duration > 0) {
+                        _uiState.update {
+                            it.copy(
+                                durationText = formatTime(duration),
+                                currentTimeText = "0:00",
+                                currentPosition = 0f
+                            )
+                        }
+                        Log.d("AudioVM", "MediaPlayer ready! Duration: ${formatTime(duration)}")
+                    } else {
+                        Log.e("AudioVM", "Duration is 0!")
+                    }
+                }
+
+                setOnCompletionListener {
+                    progressUpdateJob?.cancel()
+                    _uiState.update {
+                        it.copy(
+                            isPlaying = false,
+                            currentPosition = 1f,
+                            currentTimeText = it.durationText
+                        )
+                    }
+                    Log.d("AudioVM", "Audio completed")
+                }
+
+                setOnErrorListener { mp, what, extra ->
+                    Log.e("AudioVM", "MediaPlayer ERROR! what=$what, extra=$extra")
+                    _uiState.update { it.copy(isPlaying = false) }
+                    true
+                }
+
+                prepareAsync()
+                Log.d("AudioVM", "prepareAsync() called, waiting for onPrepared...")
+            }
+        } catch (e: Exception) {
+            Log.e("AudioVM", "Exception preparing MediaPlayer: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    private fun startProgressUpdates() {
+        progressUpdateJob?.cancel()
+        progressUpdateJob = viewModelScope.launch {
+            while (_uiState.value.isPlaying) {
+                mediaPlayer?.let { player ->
+                    if (player.isPlaying) {
+                        try {
+                            val duration = player.duration
+                            val position = player.currentPosition
+
+                            if (duration > 0) {
+                                val progress = position.toFloat() / duration.toFloat()
+                                _uiState.update {
+                                    it.copy(
+                                        currentPosition = progress,
+                                        currentTimeText = formatTime(position),
+                                        durationText = formatTime(duration)
+                                    )
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("AudioVM", "Error updating progress: ${e.message}")
+                        }
+                    }
+                }
+                delay(1000)
+            }
+        }
+    }
+
+    private fun formatTime(ms: Int): String {
+        val totalSeconds = ms / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return "%d:%02d".format(minutes, seconds)
     }
 }

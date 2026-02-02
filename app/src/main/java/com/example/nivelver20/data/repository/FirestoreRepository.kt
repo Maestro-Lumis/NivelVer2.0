@@ -32,6 +32,18 @@ data class LecturaQuestionFirestore(
     val texto: String = ""
 )
 
+data class AudioOpcion(
+    val correcta: Boolean = false,
+    val texto: String = ""
+)
+
+data class AudioQuestionFirestore(
+    val audioUrl: String = "",
+    val nivel: String = "",
+    val opciones: List<AudioOpcion> = emptyList(),
+    val pregunta: String = ""
+)
+
 class FirestoreRepository private constructor() {
 
     companion object {
@@ -49,6 +61,7 @@ class FirestoreRepository private constructor() {
     private val usersCollection = firestore.collection("users")
     private val vocabularioCollection = firestore.collection("vocabulario")
     private val lecturaCollection = firestore.collection("lectura")
+    private val audioCollection = firestore.collection("audio")
 
 
     init {
@@ -249,6 +262,53 @@ class FirestoreRepository private constructor() {
             Result.success(texto)
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Get lectura text error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAudioQuestionsByNivel(nivel: String): Result<List<AudioQuestionFirestore>> {
+        return try {
+            Log.d("FirestoreRepo", "Loading audio questions for nivel: $nivel")
+
+            val snapshot = audioCollection
+                .whereEqualTo("nivel", nivel)
+                .get()
+                .await()
+
+            val questions = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val data = doc.data ?: return@mapNotNull null
+
+                    val audioUrl = data["audioUrl"] as? String ?: ""
+                    val pregunta = data["pregunta"] as? String ?: ""
+                    val nivelValue = data["nivel"] as? String ?: ""
+
+                    // Парсим опции
+                    val opcionesData = data["opciones"] as? List<*> ?: emptyList<Any>()
+                    val opciones = opcionesData.mapNotNull { opcion ->
+                        val opcionMap = opcion as? Map<*, *> ?: return@mapNotNull null
+                        AudioOpcion(
+                            correcta = opcionMap["correcta"] as? Boolean ?: false,
+                            texto = opcionMap["texto"] as? String ?: ""
+                        )
+                    }
+
+                    AudioQuestionFirestore(
+                        audioUrl = audioUrl,
+                        nivel = nivelValue,
+                        opciones = opciones,
+                        pregunta = pregunta
+                    )
+                } catch (e: Exception) {
+                    Log.w("FirestoreRepo", "Skip invalid audio question: ${e.message}")
+                    null
+                }
+            }
+
+            Log.d("FirestoreRepo", "Loaded ${questions.size} audio questions for nivel $nivel")
+            Result.success(questions)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Get audio questions error: ${e.message}")
             Result.failure(e)
         }
     }

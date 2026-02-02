@@ -32,7 +32,7 @@ import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 
 @Composable
 fun AudioScreen(
-    nivel : String,
+    nivel: String = "A1",
     onNavigateToTest: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
     onNavigateToResults: (String, Int, Int) -> Unit = { _, _, _ -> },
@@ -187,6 +187,7 @@ fun AudioScreen(
                         ) {
                             Spacer(modifier = Modifier.weight(1f))
 
+                            // Play/Pause кнопка
                             Icon(
                                 imageVector = if (uiState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                                 contentDescription = if (uiState.isPlaying) "Pause" else "Play",
@@ -196,11 +197,40 @@ fun AudioScreen(
                                 tint = Color(0xFFf2edd0)
                             )
 
-                            Spacer(modifier = Modifier.weight(1f))
+                            Spacer(modifier = Modifier.height(20.dp))
 
+                            // ИНДИКАТОР ВРЕМЕНИ: 0:15 / 1:23
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = uiState.currentTimeText,
+                                    fontSize = (dimensions.buttonFontSize * 0.9f).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFa3b944)
+                                )
+                                Text(
+                                    text = " / ",
+                                    fontSize = (dimensions.buttonFontSize * 0.9f).sp,
+                                    color = Color(0xFFf2edd0).copy(alpha = 0.6f)
+                                )
+                                Text(
+                                    text = uiState.durationText,
+                                    fontSize = (dimensions.buttonFontSize * 0.9f).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFf2edd0)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // ИНТЕРАКТИВНЫЙ СЛАЙДЕР для перемотки
                             Slider(
                                 value = uiState.currentPosition,
                                 onValueChange = { viewModel.onSliderValueChange(it) },
+                                onValueChangeFinished = { viewModel.onSliderValueChangeFinished() },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp),
@@ -210,6 +240,8 @@ fun AudioScreen(
                                     inactiveTrackColor = Color(0xFFf2edd0).copy(alpha = 0.3f)
                                 )
                             )
+
+                            Spacer(modifier = Modifier.weight(1f))
                         }
                     }
 
@@ -240,7 +272,7 @@ fun AudioScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding))
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -261,7 +293,7 @@ fun AudioScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding))
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
                 }
             }
 
@@ -432,7 +464,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
+            .heightIn(dimensions.answerItemMinHeight)
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
@@ -447,29 +479,15 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(horizontal = dimensions.vocabularioPadding, vertical = 8.dp),
+            .padding(vertical = 12.dp, horizontal = dimensions.vocabularioPadding),
         contentAlignment = Alignment.Center
-    ){
+    ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.audioWordFontSize.sp,
+            fontSize = dimensions.vocabularioWordFontSize.sp,
             fontWeight = FontWeight.Normal,
             color = textColor,
-            textAlign = TextAlign.Center,
-            style = androidx.compose.ui.text.TextStyle(
-                fontSize = dimensions.audioWordFontSize.sp,
-                lineHeight = (dimensions.audioWordFontSize * 1.2f).sp,
-                platformStyle = androidx.compose.ui.text.PlatformTextStyle(
-                    includeFontPadding = false
-                ),
-                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
-                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
-                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
-                )
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
+            textAlign = TextAlign.Center
         )
     }
 }

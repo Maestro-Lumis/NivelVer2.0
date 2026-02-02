@@ -2,9 +2,16 @@ package com.example.nivelver20.data.session
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+
+data class TestResult(
+    val nivel: String = "A1",
+    val correctCount: Int = 0,
+    val incorrectCount: Int = 0
+)
 
 class SessionManager private constructor(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences(
@@ -17,6 +24,16 @@ class SessionManager private constructor(context: Context) {
 
     private val _currentUsername = MutableStateFlow(getCurrentUsername())
     val currentUsername: StateFlow<String?> = _currentUsername.asStateFlow()
+
+    // StateFlows для результатов тестов
+    private val _vocabularioResult = MutableStateFlow(loadVocabularioResult())
+    val vocabularioResult: StateFlow<TestResult> = _vocabularioResult.asStateFlow()
+
+    private val _lecturaResult = MutableStateFlow(loadLecturaResult())
+    val lecturaResult: StateFlow<TestResult> = _lecturaResult.asStateFlow()
+
+    private val _audioResult = MutableStateFlow(loadAudioResult())
+    val audioResult: StateFlow<TestResult> = _audioResult.asStateFlow()
 
     companion object {
         @Volatile
@@ -52,6 +69,7 @@ class SessionManager private constructor(context: Context) {
         }
         _isLoggedIn.value = true
         _currentUsername.value = username
+        Log.d("SessionManager", "User logged in: $username")
     }
 
     // Выйти из системы
@@ -59,9 +77,78 @@ class SessionManager private constructor(context: Context) {
         prefs.edit().apply {
             putBoolean("is_logged_in", false)
             remove("current_username")
+            // Не удаляем результаты тестов
             apply()
         }
         _isLoggedIn.value = false
         _currentUsername.value = null
+        Log.d("SessionManager", "User logged out")
     }
+
+    // ========== VOCABULARIO ==========
+
+    private fun loadVocabularioResult(): TestResult {
+        return TestResult(
+            nivel = prefs.getString("vocabulario_nivel", "A1") ?: "A1",
+            correctCount = prefs.getInt("vocabulario_correct", 0),
+            incorrectCount = prefs.getInt("vocabulario_incorrect", 0)
+        )
+    }
+
+    fun saveVocabularioResult(nivel: String, correctCount: Int, incorrectCount: Int) {
+        prefs.edit().apply {
+            putString("vocabulario_nivel", nivel)
+            putInt("vocabulario_correct", correctCount)
+            putInt("vocabulario_incorrect", incorrectCount)
+            apply()
+        }
+
+        _vocabularioResult.value = TestResult(nivel, correctCount, incorrectCount)
+        Log.d("SessionManager", "Saved Vocabulario: $nivel, $correctCount/$incorrectCount")
+    }
+
+    // ========== LECTURA ==========
+
+    private fun loadLecturaResult(): TestResult {
+        return TestResult(
+            nivel = prefs.getString("lectura_nivel", "A1") ?: "A1",
+            correctCount = prefs.getInt("lectura_correct", 0),
+            incorrectCount = prefs.getInt("lectura_incorrect", 0)
+        )
+    }
+
+    fun saveLecturaResult(nivel: String, correctCount: Int, incorrectCount: Int) {
+        prefs.edit().apply {
+            putString("lectura_nivel", nivel)
+            putInt("lectura_correct", correctCount)
+            putInt("lectura_incorrect", incorrectCount)
+            apply()
+        }
+
+        _lecturaResult.value = TestResult(nivel, correctCount, incorrectCount)
+        Log.d("SessionManager", "Saved Lectura: $nivel, $correctCount/$incorrectCount")
+    }
+
+    // ========== AUDIO ==========
+
+    private fun loadAudioResult(): TestResult {
+        return TestResult(
+            nivel = prefs.getString("audio_nivel", "A1") ?: "A1",
+            correctCount = prefs.getInt("audio_correct", 0),
+            incorrectCount = prefs.getInt("audio_incorrect", 0)
+        )
+    }
+
+    fun saveAudioResult(nivel: String, correctCount: Int, incorrectCount: Int) {
+        prefs.edit().apply {
+            putString("audio_nivel", nivel)
+            putInt("audio_correct", correctCount)
+            putInt("audio_incorrect", incorrectCount)
+            apply()
+        }
+
+        _audioResult.value = TestResult(nivel, correctCount, incorrectCount)
+        Log.d("SessionManager", "Saved Audio: $nivel, $correctCount/$incorrectCount")
+    }
+
 }

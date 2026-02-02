@@ -8,6 +8,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
+import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 import kotlin.math.roundToInt
 
@@ -38,6 +41,12 @@ fun VocabularioResultsScreen(
 ) {
     val dimensions = rememberAdaptiveDimensions()
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val sessionManager = SessionManager.getInstance(context)
+
+    LaunchedEffect(Unit) {
+        sessionManager.saveVocabularioResult(nivel, correctCount, incorrectCount)
+    }
 
     // Подсчет процента правильных ответов
     val totalAnswers = correctCount + incorrectCount

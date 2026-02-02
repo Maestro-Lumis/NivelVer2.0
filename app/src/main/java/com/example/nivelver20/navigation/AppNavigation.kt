@@ -133,7 +133,7 @@ fun AppNavigation(
         composable(Routes.Register.route) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    // Больше не используется, оставляем пустым
+                    // Больше не используется
                 },
                 onNavigateBack = {
                     navController.popBackStack()
@@ -164,6 +164,11 @@ fun AppNavigation(
             }
 
             if (isLoggedIn) {
+                // Получаем сохраненные результаты
+                val vocabularioResult by sessionManager.vocabularioResult.collectAsState()
+                val lecturaResult by sessionManager.lecturaResult.collectAsState()
+                val audioResult by sessionManager.audioResult.collectAsState()
+
                 PerfilScreen(
                     onNavigateToNivel = {
                         navController.navigate(Routes.NivelSelection.route + "?destination=vocabulario")
@@ -172,16 +177,22 @@ fun AppNavigation(
                         // Пока пусто
                     },
                     onNavigateToVocabulario = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=vocabulario")
+                        navController.navigate(
+                            "${Routes.VocabularioResults.route}/${vocabularioResult.nivel}/${vocabularioResult.correctCount}/${vocabularioResult.incorrectCount}"
+                        )
                     },
                     onNavigateToGrammatica = {
                         navController.navigate(Routes.NivelSelection.route + "?destination=grammatica")
                     },
                     onNavigateToAudio = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=audio")
+                        navController.navigate(
+                            "${Routes.AudioResults.route}/${audioResult.nivel}/${audioResult.correctCount}/${audioResult.incorrectCount}"
+                        )
                     },
                     onNavigateToLectura = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=lectura")
+                        navController.navigate(
+                            "${Routes.LecturaResults.route}/${lecturaResult.nivel}/${lecturaResult.correctCount}/${lecturaResult.incorrectCount}"
+                        )
                     },
                     onNavigateToTest = {
                         navController.popBackStack(Routes.Main.route, false)

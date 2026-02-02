@@ -207,7 +207,7 @@ fun LecturaScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -228,7 +228,7 @@ fun LecturaScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
                 }
             }
 

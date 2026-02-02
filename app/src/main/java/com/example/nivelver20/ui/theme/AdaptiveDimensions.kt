@@ -82,6 +82,7 @@ data class AdaptiveDimensions(
     val audioWordFontSize: Float,
 
 
+
 )
 
 enum class ScreenType {
@@ -230,7 +231,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 vocabularioPadingH = 12.dp,
 
                 // Для экрана Audio
-                audioVolumeUp = 90.dp,
+                audioVolumeUp = 66.dp,
                 lineHeightForAudAndLect = 30.sp,
                 answerItemMinHeight = 25.dp,
                 audioWordFontSize = 16f,
