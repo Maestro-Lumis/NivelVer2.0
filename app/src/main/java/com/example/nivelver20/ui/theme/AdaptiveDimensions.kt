@@ -348,7 +348,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 vocabularioPadingH = 12.dp,
 
                 // Для экрана Audio
-                audioVolumeUp = 250.dp,
+                audioVolumeUp = 200.dp,
                 lineHeightForAudAndLect = 40.sp,
                 answerItemMinHeight = 39.dp,
                 audioWordFontSize = 20f,
@@ -404,7 +404,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 vocabularioPadingH = 12.dp,
 
                 // Для экрана Audio
-                audioVolumeUp = 250.dp,
+                audioVolumeUp = 200.dp,
                 lineHeightForAudAndLect = 45.sp,
                 answerItemMinHeight = 42.dp,
                 audioWordFontSize = 38f,
@@ -522,7 +522,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 vocabularioPadingH = 12.dp,
 
                 // Для экрана Audio
-                audioVolumeUp = 500.dp,
+                audioVolumeUp = 300.dp,
                 lineHeightForAudAndLect = 60.sp,
                 answerItemMinHeight = 50.dp,
                 audioWordFontSize = 46f,

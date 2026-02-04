@@ -43,6 +43,23 @@ data class AudioQuestionFirestore(
     val opciones: List<AudioOpcion> = emptyList(),
     val pregunta: String = ""
 )
+data class GrammarOpcion(
+    val correcta: Boolean = false,
+    val texto: String = ""
+)
+
+data class GrammarQuestionFirestore(
+    val nivel: String = "",
+    val tipo: String = "",
+    val pregunta: String = "",
+    val opciones: List<GrammarOpcion> = emptyList(),
+    val fraseIncorrecta: String? = null,
+    val errorPalabra: String? = null,
+    val indicePalabra: Int? = null,
+    val palabras: List<String>? = null,
+    val respuestaCorrecta: String? = null,
+    val explicacion: String? = null
+)
 
 class FirestoreRepository private constructor() {
 
@@ -62,10 +79,9 @@ class FirestoreRepository private constructor() {
     private val vocabularioCollection = firestore.collection("vocabulario")
     private val lecturaCollection = firestore.collection("lectura")
     private val audioCollection = firestore.collection("audio")
-
+    private val grammarCollection = firestore.collection("grammar_questions") // NEW!
 
     init {
-        // Включаем offline persistence
         @Suppress("DEPRECATION") val settings = FirebaseFirestoreSettings.Builder()
             .setPersistenceEnabled(true)
             .build()
@@ -186,7 +202,7 @@ class FirestoreRepository private constructor() {
                         nivel = doc.getString("nivel") ?: ""
                     )
                 } catch (e: Exception) {
-                    Log.w("FirestoreRepo", "⚠Skip invalid word: ${e.message}")
+                    Log.w("FirestoreRepo", "Skip invalid word: ${e.message}")
                     null
                 }
             }
@@ -200,7 +216,6 @@ class FirestoreRepository private constructor() {
     }
 
     // ========== LECTURA ==========
-    // Получить все вопросы lectura для указанного уровня
     suspend fun getLecturaQuestionsByNivel(nivel: String): Result<List<LecturaQuestionFirestore>> {
         return try {
             Log.d("FirestoreRepo", "Loading lectura questions for nivel: $nivel")
@@ -218,7 +233,6 @@ class FirestoreRepository private constructor() {
                     val texto = data["texto"] as? String ?: ""
                     val nivelValue = data["nivel"] as? String ?: ""
 
-                    // Парсим опции
                     val opcionesData = data["opciones"] as? List<*> ?: emptyList<Any>()
                     val opciones = opcionesData.mapNotNull { opcion ->
                         val opcionMap = opcion as? Map<*, *> ?: return@mapNotNull null
@@ -235,7 +249,7 @@ class FirestoreRepository private constructor() {
                         texto = texto
                     )
                 } catch (e: Exception) {
-                    Log.w("FirestoreRepo", "⚠ Skip invalid lectura question: ${e.message}")
+                    Log.w("FirestoreRepo", "Skip invalid lectura question: ${e.message}")
                     null
                 }
             }
@@ -248,7 +262,6 @@ class FirestoreRepository private constructor() {
         }
     }
 
-    // Получить текст для чтения по вопросу (резервный метод, если текст нужен отдельно)
     suspend fun getLecturaText(pregunta: String): Result<String> {
         return try {
             val snapshot = lecturaCollection
@@ -266,6 +279,7 @@ class FirestoreRepository private constructor() {
         }
     }
 
+    // ========== AUDIO ==========
     suspend fun getAudioQuestionsByNivel(nivel: String): Result<List<AudioQuestionFirestore>> {
         return try {
             Log.d("FirestoreRepo", "Loading audio questions for nivel: $nivel")
@@ -283,7 +297,6 @@ class FirestoreRepository private constructor() {
                     val pregunta = data["pregunta"] as? String ?: ""
                     val nivelValue = data["nivel"] as? String ?: ""
 
-                    // Парсим опции
                     val opcionesData = data["opciones"] as? List<*> ?: emptyList<Any>()
                     val opciones = opcionesData.mapNotNull { opcion ->
                         val opcionMap = opcion as? Map<*, *> ?: return@mapNotNull null
@@ -309,6 +322,67 @@ class FirestoreRepository private constructor() {
             Result.success(questions)
         } catch (e: Exception) {
             Log.e("FirestoreRepo", "Get audio questions error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    // ========== GRAMMAR ==========
+    suspend fun getGrammarQuestionsByNivel(nivel: String): Result<List<GrammarQuestionFirestore>> {
+        return try {
+            Log.d("FirestoreRepo", "Loading grammar questions for nivel: $nivel")
+
+            val snapshot = grammarCollection
+                .whereEqualTo("nivel", nivel)
+                .get()
+                .await()
+
+            val questions = snapshot.documents.mapNotNull { doc ->
+                try {
+                    val data = doc.data ?: return@mapNotNull null
+
+                    val nivelValue = data["nivel"] as? String ?: ""
+                    val tipo = data["tipo"] as? String ?: ""
+                    val pregunta = data["pregunta"] as? String ?: ""
+                    val fraseIncorrecta = data["fraseIncorrecta"] as? String
+                    val errorPalabra = data["errorPalabra"] as? String
+                    val indicePalabra = (data["indicePalabra"] as? Long)?.toInt()
+                    val respuestaCorrecta = data["respuestaCorrecta"] as? String
+                    val explicacion = data["explicacion"] as? String
+
+                    val opcionesData = data["opciones"] as? List<*> ?: emptyList<Any>()
+                    val opciones = opcionesData.mapNotNull { opcion ->
+                        val opcionMap = opcion as? Map<*, *> ?: return@mapNotNull null
+                        GrammarOpcion(
+                            correcta = opcionMap["correcta"] as? Boolean ?: false,
+                            texto = opcionMap["texto"] as? String ?: ""
+                        )
+                    }
+
+                    val palabrasData = data["palabras"] as? List<*>
+                    val palabras = palabrasData?.mapNotNull { it as? String }
+
+                    GrammarQuestionFirestore(
+                        nivel = nivelValue,
+                        tipo = tipo,
+                        pregunta = pregunta,
+                        opciones = opciones,
+                        fraseIncorrecta = fraseIncorrecta,
+                        errorPalabra = errorPalabra,
+                        indicePalabra = indicePalabra,
+                        palabras = palabras,
+                        respuestaCorrecta = respuestaCorrecta,
+                        explicacion = explicacion
+                    )
+                } catch (e: Exception) {
+                    Log.w("FirestoreRepo", "Skip invalid grammar question: ${e.message}")
+                    null
+                }
+            }
+
+            Log.d("FirestoreRepo", "Loaded ${questions.size} grammar questions for nivel $nivel")
+            Result.success(questions)
+        } catch (e: Exception) {
+            Log.e("FirestoreRepo", "Get grammar questions error: ${e.message}")
             Result.failure(e)
         }
     }

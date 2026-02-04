@@ -10,19 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.nivelver20.ui.screens.main.MainScreen
 import com.example.nivelver20.ui.screens.nivel.NivelSelectionScreen
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.screens.audio.AudioScreen
 import com.example.nivelver20.ui.screens.audio.AudioResultsScreen
@@ -33,6 +21,8 @@ import com.example.nivelver20.ui.screens.lectura.LecturaResultsScreen
 import com.example.nivelver20.ui.screens.perfil.PerfilScreen
 import com.example.nivelver20.ui.screens.vocabulario.VocabularioResultsScreen
 import com.example.nivelver20.ui.screens.vocabulario.VocabularioScreen
+import com.example.nivelver20.ui.screens.grammar.GrammarScreen
+import com.example.nivelver20.ui.screens.grammar.GrammarResultsScreen
 
 @Composable
 fun AppNavigation(
@@ -122,8 +112,6 @@ fun AppNavigation(
                 onNavigateToPerfil = {
                     if (isLoggedIn) {
                         navController.navigate(Routes.Perfil.route)
-                    } else {
-                        // Уже на экране логина
                     }
                 }
             )
@@ -132,9 +120,7 @@ fun AppNavigation(
         // Экран регистрации
         composable(Routes.Register.route) {
             RegisterScreen(
-                onRegisterSuccess = {
-                    // Больше не используется
-                },
+                onRegisterSuccess = {},
                 onNavigateBack = {
                     navController.popBackStack()
                 },
@@ -153,7 +139,7 @@ fun AppNavigation(
             )
         }
 
-        // Экран профиля - только для авторизованных
+        // Экран профиля
         composable(Routes.Perfil.route) {
             LaunchedEffect(isLoggedIn) {
                 if (!isLoggedIn) {
@@ -164,25 +150,23 @@ fun AppNavigation(
             }
 
             if (isLoggedIn) {
-                // Получаем сохраненные результаты
                 val vocabularioResult by sessionManager.vocabularioResult.collectAsState()
                 val lecturaResult by sessionManager.lecturaResult.collectAsState()
                 val audioResult by sessionManager.audioResult.collectAsState()
+                val grammarResult by sessionManager.grammarResult.collectAsState()
 
                 PerfilScreen(
-                    onNavigateToNivel = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=vocabulario")
-                    },
-                    onNavigateToFlujo = {
-                        // Пока пусто
-                    },
+                    onNavigateToNivel = {},
+                    onNavigateToFlujo = {},
                     onNavigateToVocabulario = {
                         navController.navigate(
                             "${Routes.VocabularioResults.route}/${vocabularioResult.nivel}/${vocabularioResult.correctCount}/${vocabularioResult.incorrectCount}"
                         )
                     },
                     onNavigateToGrammatica = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=grammatica")
+                        navController.navigate(
+                            "${Routes.GrammaticaResults.route}/${grammarResult.nivel}/${grammarResult.correctCount}/${grammarResult.incorrectCount}"
+                        )
                     },
                     onNavigateToAudio = {
                         navController.navigate(
@@ -197,9 +181,7 @@ fun AppNavigation(
                     onNavigateToTest = {
                         navController.popBackStack(Routes.Main.route, false)
                     },
-                    onNavigateToPerfil = {
-                        // Уже на профиле
-                    },
+                    onNavigateToPerfil = {},
                     onLogout = {
                         navController.navigate(Routes.Login.route) {
                             popUpTo(0) { inclusive = true }
@@ -209,6 +191,7 @@ fun AppNavigation(
             }
         }
 
+        // Vocabulario
         composable(Routes.Vocabulario.route + "/{nivelId}") { backStackEntry ->
             val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
             VocabularioScreen(
@@ -233,10 +216,7 @@ fun AppNavigation(
             )
         }
 
-        // маршрут для результатов vocabulario
-        composable(
-            route = Routes.VocabularioResults.route + "/{nivel}/{correctCount}/{incorrectCount}"
-        ) { backStackEntry ->
+        composable(Routes.VocabularioResults.route + "/{nivel}/{correctCount}/{incorrectCount}") { backStackEntry ->
             val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
             val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
             val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
@@ -265,7 +245,7 @@ fun AppNavigation(
             )
         }
 
-        // Экран Lectura
+        // Lectura
         composable(Routes.Lectura.route + "/{nivelId}") { backStackEntry ->
             val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
             LecturaScreen(
@@ -290,10 +270,7 @@ fun AppNavigation(
             )
         }
 
-        // маршрут для результатов lectura
-        composable(
-            route = Routes.LecturaResults.route + "/{nivel}/{correctCount}/{incorrectCount}"
-        ) { backStackEntry ->
+        composable(Routes.LecturaResults.route + "/{nivel}/{correctCount}/{incorrectCount}") { backStackEntry ->
             val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
             val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
             val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
@@ -322,7 +299,7 @@ fun AppNavigation(
             )
         }
 
-        // Экран Audio
+        // Audio
         composable(Routes.Audio.route + "/{nivelId}") { backStackEntry ->
             val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
             AudioScreen(
@@ -347,10 +324,7 @@ fun AppNavigation(
             )
         }
 
-        // маршрут для результатов audio
-        composable(
-            route = Routes.AudioResults.route + "/{nivel}/{correctCount}/{incorrectCount}"
-        ) { backStackEntry ->
+        composable(Routes.AudioResults.route + "/{nivel}/{correctCount}/{incorrectCount}") { backStackEntry ->
             val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
             val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
             val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
@@ -379,54 +353,58 @@ fun AppNavigation(
             )
         }
 
-        // Экран Grammatica
+        // Грамматика
         composable(Routes.Grammatica.route + "/{nivelId}") { backStackEntry ->
             val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
-            PlaceholderScreen(
-                text = "GRAMÁTICA\nNivel: $nivelId",
-                onBack = {
+            GrammarScreen(
+                nivel = nivelId,
+                onNavigateToTest = {
                     navController.popBackStack(Routes.Main.route, false)
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route)
+                    } else {
+                        navController.navigate(Routes.Login.route)
+                    }
+                },
+                onNavigateToResults = { nivel, correct, incorrect ->
+                    navController.navigate(
+                        "${Routes.GrammaticaResults.route}/$nivel/$correct/$incorrect"
+                    ) {
+                        popUpTo(Routes.Grammatica.route) { inclusive = true }
+                    }
                 }
             )
         }
-    }
-}
 
-@Composable
-private fun PlaceholderScreen(
-    text: String,
-    onBack: () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF02214a)),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            Text(
-                text = text,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
+        composable(Routes.GrammaticaResults.route + "/{nivel}/{correctCount}/{incorrectCount}") { backStackEntry ->
+            val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
+            val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
+            val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
+
+            GrammarResultsScreen(
+                nivel = nivel,
+                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                correctCount = correctCount,
+                incorrectCount = incorrectCount,
+                onNavigateToMain = {
+                    navController.navigate(Routes.Main.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(Routes.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
             )
-
-            Button(
-                onClick = onBack,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFa3b944)
-                )
-            ) {
-                Text(
-                    text = "НАЗАД",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
         }
     }
 }

@@ -35,6 +35,10 @@ class SessionManager private constructor(context: Context) {
     private val _audioResult = MutableStateFlow(loadAudioResult())
     val audioResult: StateFlow<TestResult> = _audioResult.asStateFlow()
 
+    // NEW: Grammar result
+    private val _grammarResult = MutableStateFlow(loadGrammarResult())
+    val grammarResult: StateFlow<TestResult> = _grammarResult.asStateFlow()
+
     companion object {
         @Volatile
         private var INSTANCE: SessionManager? = null
@@ -77,7 +81,6 @@ class SessionManager private constructor(context: Context) {
         prefs.edit().apply {
             putBoolean("is_logged_in", false)
             remove("current_username")
-            // Не удаляем результаты тестов
             apply()
         }
         _isLoggedIn.value = false
@@ -151,4 +154,25 @@ class SessionManager private constructor(context: Context) {
         Log.d("SessionManager", "Saved Audio: $nivel, $correctCount/$incorrectCount")
     }
 
+    // ========== GRAMMAR ==========
+
+    private fun loadGrammarResult(): TestResult {
+        return TestResult(
+            nivel = prefs.getString("grammar_nivel", "A1") ?: "A1",
+            correctCount = prefs.getInt("grammar_correct", 0),
+            incorrectCount = prefs.getInt("grammar_incorrect", 0)
+        )
+    }
+
+    fun saveGrammarResult(nivel: String, correctCount: Int, incorrectCount: Int) {
+        prefs.edit().apply {
+            putString("grammar_nivel", nivel)
+            putInt("grammar_correct", correctCount)
+            putInt("grammar_incorrect", incorrectCount)
+            apply()
+        }
+
+        _grammarResult.value = TestResult(nivel, correctCount, incorrectCount)
+        Log.d("SessionManager", "Saved Grammar: $nivel, $correctCount/$incorrectCount")
+    }
 }

@@ -1,7 +1,6 @@
 package com.example.nivelver20.ui.screens.audio
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.nivelver20.data.repository.FirestoreRepository
@@ -47,8 +46,8 @@ data class AudioUiState(
     val selectedAnswer: Int? = null,
     val isPlaying: Boolean = false,
     val currentPosition: Float = 0f,
-    val currentTimeText: String = "0:00", // Текущее время (0:15)
-    val durationText: String = "0:00",     // Длительность (1:23)
+    val currentTimeText: String = "0:00",
+    val durationText: String = "0:00",
     val correctCount: Int = 0,
     val incorrectCount: Int = 0,
     val testButton: String = "TEST",
@@ -99,7 +98,7 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 reset()
                 release()
             } catch (e: Exception) {
-                Log.e("AudioVM", "Error releasing MediaPlayer: ${e.message}")
+                // Silently handle
             }
         }
         mediaPlayer = null
@@ -139,18 +138,12 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
 
-                if (questions.size < 7) {
-                    Log.w("AudioVM", "Недостаточно вопросов: ${questions.size}")
-                }
-
                 allAvailableQuestions = questions.shuffled()
                 usedQuestionsStartIndex = 0
 
                 loadNextQuestion()
 
                 _uiState.update { it.copy(isLoading = false, nivel = nivel) }
-
-                Log.d("AudioVM", "Loaded ${questions.size} questions")
             } else {
                 _uiState.update {
                     it.copy(
@@ -164,7 +157,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadNextQuestion() {
         if (allAvailableQuestions.isEmpty()) {
-            Log.e("AudioVM", "No questions available")
             return
         }
 
@@ -202,8 +194,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         prepareMediaPlayer(question.audioUrl)
-
-        Log.d("AudioVM", "Loaded round ${_uiState.value.currentRound}/${_uiState.value.totalRounds}")
     }
 
     fun loadQuestions(nivel: String) {
@@ -272,8 +262,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
         val isCorrect = selectedAnswer.isCorrect
 
         if (isCorrect) {
-            Log.d("AudioVM", "Correct answer!")
-
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
@@ -299,8 +287,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             checkIfTestComplete()
 
         } else {
-            Log.d("AudioVM", "Incorrect answer!")
-
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
@@ -332,15 +318,11 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             val currentRound = _uiState.value.currentRound
             val totalRounds = _uiState.value.totalRounds
 
-            Log.d("AudioVM", "Round $currentRound completed!")
-
             if (currentRound < totalRounds) {
                 delay(1500)
                 _uiState.update { it.copy(currentRound = currentRound + 1) }
                 loadNextQuestion()
-                Log.d("AudioVM", "Starting round ${currentRound + 1}")
             } else {
-                Log.d("AudioVM", "All rounds completed!")
                 delay(500)
                 onNavigateToResults?.invoke(
                     _uiState.value.nivel,
@@ -386,27 +368,17 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun togglePlayPause() {
-        val player = mediaPlayer ?: run {
-            Log.e("AudioVM", "MediaPlayer is NULL!")
-            return
-        }
+        val player = mediaPlayer ?: return
 
         try {
-            // Проверяем, что MediaPlayer готов
             val duration = player.duration
-            if (duration <= 0) {
-                Log.e("AudioVM", "MediaPlayer not ready yet! Duration: $duration")
-                return
-            }
+            if (duration <= 0) return
 
             if (_uiState.value.isPlaying) {
-                // ПАУЗА
                 player.pause()
                 progressUpdateJob?.cancel()
                 _uiState.update { it.copy(isPlaying = false) }
-                Log.d("AudioVM", "⏸️ Paused at ${_uiState.value.currentTimeText}")
             } else {
-                // PLAY
                 if (_uiState.value.currentPosition >= 0.99f) {
                     player.seekTo(0)
                     _uiState.update {
@@ -415,28 +387,22 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                             currentTimeText = "0:00"
                         )
                     }
-                    Log.d("AudioVM", "Restarting from beginning")
                 }
 
+                _uiState.update { it.copy(isPlaying = true) }
                 player.start()
                 startProgressUpdates()
-                _uiState.update { it.copy(isPlaying = true) }
-                Log.d("AudioVM", "Playing from ${_uiState.value.currentTimeText}")
             }
         } catch (e: Exception) {
-            Log.e("AudioVM", "Error in togglePlayPause: ${e.message}")
-            e.printStackTrace()
             _uiState.update { it.copy(isPlaying = false) }
         }
     }
 
     fun onSliderValueChange(value: Float) {
-        // Когда пользователь двигает слайдер - обновляем только UI
         _uiState.update { it.copy(currentPosition = value) }
     }
 
     fun onSliderValueChangeFinished() {
-        // Когда пользователь отпустил слайдер - перематываем аудио
         val player = mediaPlayer ?: return
         val duration = player.duration
         val value = _uiState.value.currentPosition
@@ -445,20 +411,15 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
             val position = (value * duration).toInt()
             player.seekTo(position)
 
-            // Обновляем время
             _uiState.update {
                 it.copy(
                     currentTimeText = formatTime(position)
                 )
             }
-
-            Log.d("AudioVM", "Seeked to: ${formatTime(position)}")
         }
     }
 
     private fun prepareMediaPlayer(audioUrl: String) {
-        Log.d("AudioVM", "Preparing media player for URL: $audioUrl")
-
         try {
             mediaPlayer = android.media.MediaPlayer().apply {
                 setDataSource(audioUrl)
@@ -466,7 +427,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                 setOnPreparedListener { player ->
                     val duration = player.duration
 
-                    // ВАЖНО: Обновляем UI только если длительность > 0
                     if (duration > 0) {
                         _uiState.update {
                             it.copy(
@@ -475,9 +435,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                                 currentPosition = 0f
                             )
                         }
-                        Log.d("AudioVM", "MediaPlayer ready! Duration: ${formatTime(duration)}")
-                    } else {
-                        Log.e("AudioVM", "Duration is 0!")
                     }
                 }
 
@@ -490,21 +447,16 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                             currentTimeText = it.durationText
                         )
                     }
-                    Log.d("AudioVM", "Audio completed")
                 }
 
-                setOnErrorListener { mp, what, extra ->
-                    Log.e("AudioVM", "MediaPlayer ERROR! what=$what, extra=$extra")
+                setOnErrorListener { _, _, _ ->
                     _uiState.update { it.copy(isPlaying = false) }
                     true
                 }
 
                 prepareAsync()
-                Log.d("AudioVM", "prepareAsync() called, waiting for onPrepared...")
             }
         } catch (e: Exception) {
-            Log.e("AudioVM", "Exception preparing MediaPlayer: ${e.message}")
-            e.printStackTrace()
         }
     }
 
@@ -529,7 +481,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                                 }
                             }
                         } catch (e: Exception) {
-                            Log.e("AudioVM", "Error updating progress: ${e.message}")
                         }
                     }
                 }
