@@ -47,6 +47,16 @@ data class AdaptiveDimensions(
 
     val exitDialog: Float,
 
+    // Для экрана Perfil
+    val perfilTitleFontSize: Float,
+    val perfilUsernameFontSize: Float,
+    val perfilNivelFontSize: Float,
+    val perfilButtonHeight: Dp,
+    val perfilButtonFontSize: Float,
+    val perfilSpacingBetweenButtons: Dp,
+    val perfilTopPadding: Dp,
+    val perfilBottomPadding: Dp,
+
     // Для экрана выбора уровня
     val nivelItemSpacing: Dp,
     val nivelImageSize: Dp,
@@ -81,7 +91,17 @@ data class AdaptiveDimensions(
     val answerItemMinHeight: Dp,
     val audioWordFontSize: Float,
 
+    // lectura
 
+    // Для экрана Grammar
+    val grammarQuestionFontSize: Float,
+    val grammarAnswerFontSize: Float,
+    val grammarAnswerMinHeight: Dp,
+    val grammarAnswerPadding: Dp,
+    val grammarDragDropBoxHeight: Dp,
+    val grammarWordButtonHeight: Dp,
+    val grammarWordButtonFontSize: Float,
+    val grammarSpacingBetweenSections: Dp,
 
 )
 
@@ -147,6 +167,8 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 nivelTitleFontSize = 28f,
                 nivelSideTextFontSize = 28f,
 
+
+
                 // Диалог
                 exitDialog = 14f,
 
@@ -178,7 +200,25 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 audioWordFontSize = 7f,
 
                 // Ошибки
+                // Для экрана Grammar
+                grammarQuestionFontSize = 16f,
+                grammarAnswerFontSize = 14f,
+                grammarAnswerMinHeight = 45.dp,
+                grammarAnswerPadding = 10.dp,
+                grammarDragDropBoxHeight = 60.dp,
+                grammarWordButtonHeight = 40.dp,
+                grammarWordButtonFontSize = 13f,
+                grammarSpacingBetweenSections = 8.dp,
 
+                // Для экрана Perfil
+                perfilTitleFontSize = 22f,
+                perfilUsernameFontSize = 14f,
+                perfilNivelFontSize = 20f,
+                perfilButtonHeight = 35.dp,
+                perfilButtonFontSize = 14f,
+                perfilSpacingBetweenButtons = 8.dp,
+                perfilTopPadding = 10.dp,
+                perfilBottomPadding = 10.dp,
             )
 
             ScreenType.MEDIUM_PHONE -> AdaptiveDimensions(
@@ -237,7 +277,26 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 audioWordFontSize = 16f,
 
                 // Ошибки
+                // Для экрана Grammar
 
+                grammarQuestionFontSize = 18f,
+                grammarAnswerFontSize = 16f,
+                grammarAnswerMinHeight = 50.dp,
+                grammarAnswerPadding = 12.dp,
+                grammarDragDropBoxHeight = 70.dp,
+                grammarWordButtonHeight = 45.dp,
+                grammarWordButtonFontSize = 15f,
+                grammarSpacingBetweenSections = 10.dp,
+
+                // Для экрана Perfil
+                perfilTitleFontSize = 26f,
+                perfilUsernameFontSize = 16f,
+                perfilNivelFontSize = 24f,
+                perfilButtonHeight = 40.dp,
+                perfilButtonFontSize = 16f,
+                perfilSpacingBetweenButtons = 10.dp,
+                perfilTopPadding = 12.dp,
+                perfilBottomPadding = 12.dp,
             )
 
             ScreenType.LARGE_PHONE -> AdaptiveDimensions(
@@ -296,6 +355,25 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 audioWordFontSize = 33f,
 
                 // Ошибки
+
+                grammarQuestionFontSize = 20f,
+                grammarAnswerFontSize = 18f,
+                grammarAnswerMinHeight = 55.dp,
+                grammarAnswerPadding = 14.dp,
+                grammarDragDropBoxHeight = 80.dp,
+                grammarWordButtonHeight = 50.dp,
+                grammarWordButtonFontSize = 17f,
+                grammarSpacingBetweenSections = 12.dp,
+
+                // Для экрана Perfil
+                perfilTitleFontSize = 32f,
+                perfilUsernameFontSize = 18f,
+                perfilNivelFontSize = 28f,
+                perfilButtonHeight = 50.dp,
+                perfilButtonFontSize = 18f,
+                perfilSpacingBetweenButtons = 12.dp,
+                perfilTopPadding = 15.dp,
+                perfilBottomPadding = 15.dp,
             )
 
             ScreenType.XLARGE_PHONE -> AdaptiveDimensions(
@@ -352,6 +430,27 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 40.sp,
                 answerItemMinHeight = 39.dp,
                 audioWordFontSize = 20f,
+
+                // Для экрана Grammar
+
+                grammarQuestionFontSize = 22f,
+                grammarAnswerFontSize = 20f,
+                grammarAnswerMinHeight = 60.dp,
+                grammarAnswerPadding = 16.dp,
+                grammarDragDropBoxHeight = 90.dp,
+                grammarWordButtonHeight = 55.dp,
+                grammarWordButtonFontSize = 19f,
+                grammarSpacingBetweenSections = 14.dp,
+
+                // Для экрана Perfil
+                perfilTitleFontSize = 36f,
+                perfilUsernameFontSize = 20f,
+                perfilNivelFontSize = 32f,
+                perfilButtonHeight = 55.dp,
+                perfilButtonFontSize = 20f,
+                perfilSpacingBetweenButtons = 14.dp,
+                perfilTopPadding = 16.dp,
+                perfilBottomPadding = 16.dp,
             )
 
             ScreenType.SMALL_TABLET -> AdaptiveDimensions(
@@ -410,6 +509,26 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 audioWordFontSize = 38f,
 
                 // Ошибки
+
+                // Для экрана Grammar
+                grammarQuestionFontSize = 26f,
+                grammarAnswerFontSize = 24f,
+                grammarAnswerMinHeight = 70.dp,
+                grammarAnswerPadding = 18.dp,
+                grammarDragDropBoxHeight = 100.dp,
+                grammarWordButtonHeight = 65.dp,
+                grammarWordButtonFontSize = 22f,
+                grammarSpacingBetweenSections = 16.dp,
+
+                // Для экрана Perfil
+                perfilTitleFontSize = 42f,
+                perfilUsernameFontSize = 24f,
+                perfilNivelFontSize = 38f,
+                perfilButtonHeight = 60.dp,
+                perfilButtonFontSize = 22f,
+                perfilSpacingBetweenButtons = 16.dp,
+                perfilTopPadding = 18.dp,
+                perfilBottomPadding = 18.dp,
 
             )
 
@@ -470,6 +589,26 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Ошибки
 
+                // Для экрана Grammar
+                grammarQuestionFontSize = 32f,
+                grammarAnswerFontSize = 28f,
+                grammarAnswerMinHeight = 85.dp,
+                grammarAnswerPadding = 22.dp,
+                grammarDragDropBoxHeight = 120.dp,
+                grammarWordButtonHeight = 75.dp,
+                grammarWordButtonFontSize = 26f,
+                grammarSpacingBetweenSections = 20.dp,
+
+                // Для экрана Perfil
+                perfilTitleFontSize = 50f,
+                perfilUsernameFontSize = 30f,
+                perfilNivelFontSize = 45f,
+                perfilButtonHeight = 70.dp,
+                perfilButtonFontSize = 28f,
+                perfilSpacingBetweenButtons = 18.dp,
+                perfilTopPadding = 20.dp,
+                perfilBottomPadding = 20.dp,
+
             )
 
             ScreenType.LARGE_TABLET -> AdaptiveDimensions(
@@ -529,6 +668,26 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
 
                 // Ошибки
 
+                // Для экрана Grammar
+                grammarQuestionFontSize = 36f,
+                grammarAnswerFontSize = 32f,
+                grammarAnswerMinHeight = 100.dp,
+                grammarAnswerPadding = 26.dp,
+                grammarDragDropBoxHeight = 140.dp,
+                grammarWordButtonHeight = 85.dp,
+                grammarWordButtonFontSize = 30f,
+                grammarSpacingBetweenSections = 24.dp,
+
+                // Для экрана Perfil
+
+                perfilTitleFontSize = 56f,
+                perfilUsernameFontSize = 34f,
+                perfilNivelFontSize = 50f,
+                perfilButtonHeight = 80.dp,
+                perfilButtonFontSize = 32f,
+                perfilSpacingBetweenButtons = 20.dp,
+                perfilTopPadding = 24.dp,
+                perfilBottomPadding = 24.dp,
             )
         }
     }

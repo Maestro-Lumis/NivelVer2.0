@@ -1,9 +1,14 @@
 package com.example.nivelver20.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.nivelver20.ui.screens.main.MainScreen
 import com.example.nivelver20.ui.screens.nivel.NivelSelectionScreen
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.screens.audio.AudioScreen
 import com.example.nivelver20.ui.screens.audio.AudioResultsScreen
@@ -23,6 +29,12 @@ import com.example.nivelver20.ui.screens.vocabulario.VocabularioResultsScreen
 import com.example.nivelver20.ui.screens.vocabulario.VocabularioScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarResultsScreen
+import com.example.nivelver20.data.repository.FirestoreRepository
+import com.example.nivelver20.ui.screens.nivelTest.NivelResultsScreen
+import com.example.nivelver20.ui.screens.nivelTest.NivelScreen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @Composable
 fun AppNavigation(
@@ -31,6 +43,7 @@ fun AppNavigation(
     val context = LocalContext.current
     val sessionManager = SessionManager.getInstance(context)
     val isLoggedIn by sessionManager.isLoggedIn.collectAsState()
+    val repository = remember { FirestoreRepository.getInstance() }
 
     NavHost(
         navController = navController,
@@ -51,12 +64,13 @@ fun AppNavigation(
                 onNavigateToLectura = {
                     navController.navigate(Routes.NivelSelection.route + "?destination=lectura")
                 },
+                onNavigateToFlujo = {
+                    navController.navigate(Routes.NivelSelection.route + "?destination=flujo")
+                },
+                onNavigateToNivel = {
+                    navController.navigate(Routes.NivelSelection.route + "?destination=nivel")
+                },
                 onNavigateToTest = {
-                    if (isLoggedIn) {
-                        navController.navigate(Routes.Perfil.route)
-                    } else {
-                        navController.navigate(Routes.Login.route)
-                    }
                 },
                 onNavigateToPerfil = {
                     if (isLoggedIn) {
@@ -77,6 +91,8 @@ fun AppNavigation(
                         "lectura" -> navController.navigate(Routes.Lectura.route + "/$nivelId")
                         "audio" -> navController.navigate(Routes.Audio.route + "/$nivelId")
                         "grammatica" -> navController.navigate(Routes.Grammatica.route + "/$nivelId")
+                        "flujo" -> navController.navigate(Routes.Flujo.route + "/$nivelId")
+                        "nivel" -> navController.navigate(Routes.Nivel.route + "/$nivelId")
                         else -> navController.navigate(Routes.Vocabulario.route + "/$nivelId")
                     }
                 },
@@ -155,9 +171,29 @@ fun AppNavigation(
                 val audioResult by sessionManager.audioResult.collectAsState()
                 val grammarResult by sessionManager.grammarResult.collectAsState()
 
+                val currentUsername = sessionManager.getCurrentUser()
+                val userNivel = remember { androidx.compose.runtime.mutableStateOf("A1") }
+
+                LaunchedEffect(currentUsername) {
+                    if (currentUsername != null) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            val result = repository.getUserByUsername(currentUsername)
+                            if (result.isSuccess) {
+                                val user = result.getOrNull()
+                                userNivel.value = user?.nivel ?: "A1"
+                            }
+                        }
+                    }
+                }
+
                 PerfilScreen(
-                    onNavigateToNivel = {},
-                    onNavigateToFlujo = {},
+                    nivel = userNivel.value,
+                    onNavigateToNivel = {
+                        navController.navigate(Routes.NivelSelection.route + "?destination=nivel")
+                    },
+                    onNavigateToFlujo = {
+                        navController.navigate(Routes.NivelSelection.route + "?destination=flujo")
+                    },
                     onNavigateToVocabulario = {
                         navController.navigate(
                             "${Routes.VocabularioResults.route}/${vocabularioResult.nivel}/${vocabularioResult.correctCount}/${vocabularioResult.incorrectCount}"
@@ -405,6 +441,80 @@ fun AppNavigation(
                     }
                 }
             )
+        }
+
+        // ========== Nivel ==========
+        composable(Routes.Nivel.route + "/{nivelId}") { backStackEntry ->
+            val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
+
+            NivelScreen(
+                nivel = nivelId,
+                onNavigateToTest = {
+                    navController.popBackStack(Routes.Main.route, false)
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route)
+                    } else {
+                        navController.navigate(Routes.Login.route)
+                    }
+                },
+                onNavigateToResults = { nivel, correct, incorrect ->
+                    navController.navigate(
+                        "${Routes.NivelResults.route}/$nivel/$correct/$incorrect"
+                    ) {
+                        popUpTo(Routes.Nivel.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // результат Nivel
+        composable(Routes.NivelResults.route + "/{nivel}/{correctCount}/{incorrectCount}") { backStackEntry ->
+            val nivel = backStackEntry.arguments?.getString("nivel") ?: "A1"
+            val correctCount = backStackEntry.arguments?.getString("correctCount")?.toIntOrNull() ?: 0
+            val incorrectCount = backStackEntry.arguments?.getString("incorrectCount")?.toIntOrNull() ?: 0
+
+            NivelResultsScreen(
+                nivel = nivel,
+                correctCount = correctCount,
+                incorrectCount = incorrectCount,
+                onNavigateToTest = {
+                    navController.navigate(Routes.Main.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                onRetakeTest = {
+                    navController.navigate(Routes.Nivel.route + "/$nivel") {
+                        popUpTo(Routes.NivelResults.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // FlujoScreen
+        composable(Routes.Flujo.route + "/{nivelId}") { backStackEntry ->
+            val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
+
+            // ВРЕМЕННЫЙ PLACEHOLDER - показываем сообщение
+            // В следующем шаге создадим полноценный FlujoScreen
+            androidx.compose.foundation.layout.Box(
+                modifier = androidx.compose.ui.Modifier.fillMaxSize().background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0xFFFFE97D),
+                            Color(0xFFFFB347)
+                        )
+                    )
+                ),
+                contentAlignment = androidx.compose.ui.Alignment.Center
+            ) {
+                androidx.compose.material3.Text(
+                    text = "FLUJO TEST\nNivel: $nivelId\n\n(В разработке...)",
+                    fontSize = 24.sp,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
         }
     }
 }

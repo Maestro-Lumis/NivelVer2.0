@@ -32,6 +32,8 @@ fun MainScreen(
     onNavigateToLectura: () -> Unit = {},
     onNavigateToTest: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
+    onNavigateToFlujo: () -> Unit = {},
+    onNavigateToNivel: () -> Unit = {},
     viewModel: MainViewModel = viewModel()
 ) {
     val dimensions = rememberAdaptiveDimensions()
@@ -76,7 +78,7 @@ fun MainScreen(
                             Color(0xFFFFE97D)
                         )
                     ),
-                    onClick = {},
+                    onClick = onNavigateToNivel,
                     dimensions = dimensions
                 )
 
@@ -89,7 +91,7 @@ fun MainScreen(
                             Color(0xFFFFB347)
                         )
                     ),
-                    onClick = {},
+                    onClick = onNavigateToFlujo,
                     dimensions = dimensions
                 )
             }

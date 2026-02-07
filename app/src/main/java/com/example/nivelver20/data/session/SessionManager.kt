@@ -35,9 +35,12 @@ class SessionManager private constructor(context: Context) {
     private val _audioResult = MutableStateFlow(loadAudioResult())
     val audioResult: StateFlow<TestResult> = _audioResult.asStateFlow()
 
-    // NEW: Grammar result
     private val _grammarResult = MutableStateFlow(loadGrammarResult())
     val grammarResult: StateFlow<TestResult> = _grammarResult.asStateFlow()
+
+    // NEW: Nivel result (комплексный тест)
+    private val _nivelResult = MutableStateFlow(loadNivelResult())
+    val nivelResult: StateFlow<TestResult> = _nivelResult.asStateFlow()
 
     companion object {
         @Volatile
@@ -174,5 +177,27 @@ class SessionManager private constructor(context: Context) {
 
         _grammarResult.value = TestResult(nivel, correctCount, incorrectCount)
         Log.d("SessionManager", "Saved Grammar: $nivel, $correctCount/$incorrectCount")
+    }
+
+    // ========== NIVEL (КОМПЛЕКСНЫЙ ТЕСТ) ==========
+
+    private fun loadNivelResult(): TestResult {
+        return TestResult(
+            nivel = prefs.getString("nivel_test_nivel", "A1") ?: "A1",
+            correctCount = prefs.getInt("nivel_test_correct", 0),
+            incorrectCount = prefs.getInt("nivel_test_incorrect", 0)
+        )
+    }
+
+    fun saveNivelResult(nivel: String, correctCount: Int, incorrectCount: Int) {
+        prefs.edit().apply {
+            putString("nivel_test_nivel", nivel)
+            putInt("nivel_test_correct", correctCount)
+            putInt("nivel_test_incorrect", incorrectCount)
+            apply()
+        }
+
+        _nivelResult.value = TestResult(nivel, correctCount, incorrectCount)
+        Log.d("SessionManager", "Saved Nivel: $nivel, $correctCount/$incorrectCount")
     }
 }

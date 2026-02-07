@@ -28,7 +28,7 @@ import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 
 @Composable
 fun GrammarScreen(
-    nivel: String = "A1",
+    nivel : String,
     onNavigateToTest: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
     onNavigateToResults: (String, Int, Int) -> Unit = { _, _, _ -> },
@@ -138,11 +138,11 @@ fun GrammarScreen(
                     )
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimensions.vocabularioPadding),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding))
-
                     Text(
                         text = uiState.title,
                         fontSize = dimensions.vocabularioTitleFontSize.sp,
@@ -152,8 +152,7 @@ fun GrammarScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding))
-
+                    // Контент вопроса занимает всё доступное место
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -180,8 +179,6 @@ fun GrammarScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -200,8 +197,6 @@ fun GrammarScreen(
                             color = Color(0xFF48C553)
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
                 }
             }
 
@@ -238,29 +233,33 @@ private fun MultipleChoiceView(
     dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(dimensions.vocabularioPadding),
-        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Text(
             text = uiState.currentQuestion?.pregunta ?: "",
-            fontSize = dimensions.buttonFontSize.sp,
+            fontSize = dimensions.grammarQuestionFontSize.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
             lineHeight = dimensions.lineHeightForAudAndLect,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
         )
 
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))
-
-        uiState.answers.forEachIndexed { index, answer ->
-            AnswerItem(
-                answer = answer,
-                onClick = { onAnswerClick(index) },
-                dimensions = dimensions
-            )
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            uiState.answers.forEachIndexed { index, answer ->
+                AnswerItem(
+                    answer = answer,
+                    onClick = { onAnswerClick(index) },
+                    dimensions = dimensions
+                )
+            }
         }
     }
 }
@@ -272,50 +271,60 @@ private fun ErrorCorrectionView(
     dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(dimensions.vocabularioPadding),
-        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
-        Text(
-            text = uiState.currentQuestion?.pregunta ?: "",
-            fontSize = dimensions.buttonFontSize.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing / 2))
-
-        Text(
-            text = "\"${uiState.currentQuestion?.fraseIncorrecta ?: ""}\"",
-            fontSize = dimensions.vocabularioWordFontSize.sp,
-            fontWeight = FontWeight.Normal,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing / 2))
-
-        Text(
-            text = "¿Cuál es la forma correcta?",
-            fontSize = dimensions.vocabularioWordFontSize.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))
-
-        uiState.answers.forEachIndexed { index, answer ->
-            AnswerItem(
-                answer = answer,
-                onClick = { onAnswerClick(index) },
-                dimensions = dimensions
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            Text(
+                text = uiState.currentQuestion?.pregunta ?: "",
+                fontSize = dimensions.grammarQuestionFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
             )
+
+            Text(
+                text = "\"${uiState.currentQuestion?.fraseIncorrecta ?: ""}\"",
+                fontSize = dimensions.grammarAnswerFontSize.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+
+            Text(
+                text = "¿Cuál es la forma correcta?",
+                fontSize = dimensions.grammarAnswerFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            uiState.answers.forEachIndexed { index, answer ->
+                AnswerItem(
+                    answer = answer,
+                    onClick = { onAnswerClick(index) },
+                    dimensions = dimensions
+                )
+            }
         }
     }
 }
@@ -329,86 +338,80 @@ private fun DragDropView(
     dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(dimensions.vocabularioPadding),
-        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         Text(
             text = uiState.currentQuestion?.pregunta ?: "",
-            fontSize = dimensions.buttonFontSize.sp,
+            fontSize = dimensions.grammarQuestionFontSize.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
         )
-
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))
 
         // User answer box
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp)
+                .height(dimensions.grammarDragDropBoxHeight)
                 .background(
                     color = Color(0xFFF5F5DC),
                     shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
                 )
-                .padding(12.dp),
+                .padding(dimensions.grammarAnswerPadding),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras para ordenar..." },
-                fontSize = dimensions.vocabularioWordFontSize.sp,
+                text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras..." },
+                fontSize = dimensions.grammarAnswerFontSize.sp,
                 color = if (uiState.userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
                 textAlign = TextAlign.Center
             )
         }
 
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))
-
         // Words grid
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
             val words = uiState.dragDropWords
             words.chunked(3).forEach { rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
+                    horizontalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
                 ) {
                     rowWords.forEach { word ->
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(50.dp)
+                                .height(dimensions.grammarWordButtonHeight)
                                 .background(
                                     color = Color(0xFFa3b944),
                                     shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
                                 )
                                 .clickable { onWordClick(word) }
-                                .padding(8.dp),
+                                .padding(4.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = word,
-                                fontSize = dimensions.vocabularioWordFontSize.sp,
+                                fontSize = dimensions.grammarWordButtonFontSize.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFF02214a),
                                 textAlign = TextAlign.Center
                             )
                         }
                     }
-                    // Fill empty spaces
                     repeat(3 - rowWords.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))
 
         // Buttons
         Row(
@@ -417,22 +420,38 @@ private fun DragDropView(
         ) {
             Button(
                 onClick = onClear,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFC42D2C)
-                )
+                ),
+                shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("BORRAR", color = Color.White)
+                Text(
+                    "BORRAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Button(
                 onClick = onSubmit,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF48C553)
-                )
+                ),
+                shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("ENVIAR", color = Color.White)
+                Text(
+                    "ENVIAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -471,7 +490,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(dimensions.answerItemMinHeight)
+            .heightIn(min = dimensions.grammarAnswerMinHeight)
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
@@ -486,12 +505,12 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(vertical = 12.dp, horizontal = dimensions.vocabularioPadding),
+            .padding(vertical = dimensions.grammarAnswerPadding, horizontal = dimensions.grammarAnswerPadding * 2),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.grammarAnswerFontSize.sp,
             fontWeight = FontWeight.Normal,
             color = textColor,
             textAlign = TextAlign.Center

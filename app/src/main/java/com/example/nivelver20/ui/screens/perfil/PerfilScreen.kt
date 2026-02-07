@@ -29,6 +29,7 @@ import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 
 @Composable
 fun PerfilScreen(
+    nivel: String,
     onNavigateToNivel: () -> Unit = {},
     onNavigateToFlujo: () -> Unit = {},
     onNavigateToVocabulario: () -> Unit = {},
@@ -45,6 +46,15 @@ fun PerfilScreen(
     val context = LocalContext.current
     val sessionManager = SessionManager.getInstance(context)
     val currentUsername by sessionManager.currentUsername.collectAsState()
+
+    // Получаем картинку для уровня
+    val nivelImageRes = when (nivel) {
+        "A1" -> R.drawable.a1
+        "A2" -> R.drawable.a2
+        "B1" -> R.drawable.b1
+        "B2" -> R.drawable.b2
+        else -> R.drawable.a0
+    }
 
     Box(
         modifier = Modifier
@@ -79,7 +89,7 @@ fun PerfilScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(dimensions.perfilTopPadding))
 
             // Иконка выхода в правом верхнем углу
             Box(
@@ -91,7 +101,7 @@ fun PerfilScreen(
                     contentDescription = "Cerrar sesión",
                     tint = Color(0xFFa3b944),
                     modifier = Modifier
-                        .size(dimensions.loginTitleFontSize.sp.value.dp)
+                        .size(dimensions.perfilTitleFontSize.sp.value.dp)
                         .clickable {
                             sessionManager.logout()
                             onLogout()
@@ -102,33 +112,35 @@ fun PerfilScreen(
             // Заголовок
             Text(
                 text = uiState.title,
-                fontSize = dimensions.loginTitleFontSize.sp,
+                fontSize = dimensions.perfilTitleFontSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFa3b944),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // NOMBRE + NIVEL
+            // NOMBRE + NIVEL (картинка)
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(dimensions.loginSpaceBetweenInputs)
+                verticalArrangement = Arrangement.spacedBy(dimensions.perfilSpacingBetweenButtons)
             ) {
                 Text(
                     text = currentUsername ?: "Usuario",
-                    fontSize = dimensions.loginLabelFontSize.sp,
+                    fontSize = dimensions.perfilUsernameFontSize.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFa3b944),
                     textAlign = TextAlign.Center
                 )
 
-                Text(
-                    text = uiState.nivelLabel,
-                    fontSize = dimensions.loginTitleFontSize.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center
+                // NIVEL как картинка
+                Image(
+                    painter = painterResource(id = nivelImageRes),
+                    contentDescription = "Nivel $nivel",
+                    modifier = Modifier
+                        .size(dimensions.nivelImageSize)
+                        .padding(vertical = 4.dp),
+                    contentScale = ContentScale.Fit
                 )
             }
 
@@ -136,7 +148,7 @@ fun PerfilScreen(
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
+                verticalArrangement = Arrangement.spacedBy(dimensions.perfilSpacingBetweenButtons)
             ) {
                 // NIVEL
                 PerfilButton(
@@ -217,13 +229,13 @@ fun PerfilScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(dimensions.perfilBottomPadding))
 
             // Нижняя часть: TEST и PERFIL
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = dimensions.verticalPadding),
+                    .padding(bottom = dimensions.perfilBottomPadding),
                 horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
             ) {
                 BottomButton(
@@ -255,7 +267,7 @@ private fun PerfilButton(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(dimensions.buttonHeight),
+            .height(dimensions.perfilButtonHeight),
         shape = RoundedCornerShape(dimensions.buttonCornerRadius),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent
@@ -270,7 +282,7 @@ private fun PerfilButton(
         ) {
             Text(
                 text = text,
-                fontSize = dimensions.buttonFontSize.sp,
+                fontSize = dimensions.perfilButtonFontSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF2C3E50),
                 textAlign = TextAlign.Center
