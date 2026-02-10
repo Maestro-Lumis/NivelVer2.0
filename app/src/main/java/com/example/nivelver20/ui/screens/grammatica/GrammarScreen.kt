@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -138,11 +140,11 @@ fun GrammarScreen(
                     )
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(dimensions.vocabularioPadding),
+                    modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
+
                     Text(
                         text = uiState.title,
                         fontSize = dimensions.vocabularioTitleFontSize.sp,
@@ -152,7 +154,8 @@ fun GrammarScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Контент вопроса занимает всё доступное место
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -179,6 +182,8 @@ fun GrammarScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -197,6 +202,8 @@ fun GrammarScreen(
                             color = Color(0xFF48C553)
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
                 }
             }
 
@@ -340,46 +347,71 @@ private fun DragDropView(
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = uiState.currentQuestion?.pregunta ?: "",
-            fontSize = dimensions.grammarQuestionFontSize.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp)
-        )
-
-        // User answer box
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(dimensions.grammarDragDropBoxHeight)
-                .background(
-                    color = Color(0xFFF5F5DC),
-                    shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
-                )
-                .padding(dimensions.grammarAnswerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras..." },
-                fontSize = dimensions.grammarAnswerFontSize.sp,
-                color = if (uiState.userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
-                textAlign = TextAlign.Center
-            )
-        }
-
-        // Words grid
         Column(
             modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            Text(
+                text = uiState.currentQuestion?.pregunta ?: "",
+                fontSize = dimensions.grammarQuestionFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = dimensions.grammarDragDropBoxHeight)
+                    .wrapContentHeight()
+                    .background(
+                        color = Color(0xFFF5F5DC),
+                        shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                    )
+                    .padding(dimensions.grammarAnswerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras..." },
+                    fontSize = dimensions.grammarAnswerFontSize.sp,
+                    color = if (uiState.userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
             val words = uiState.dragDropWords
-            words.chunked(3).forEach { rowWords ->
+            val wordCount = words.size
+
+            val columnsCount = when {
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.SMALL_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.MEDIUM_PHONE -> 2
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.LARGE_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.XLARGE_PHONE -> {
+                    when {
+                        wordCount <= 6 -> 2
+                        else -> 3
+                    }
+                }
+                else -> 3
+            }
+
+            words.chunked(columnsCount).forEach { rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
@@ -394,7 +426,7 @@ private fun DragDropView(
                                     shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
                                 )
                                 .clickable { onWordClick(word) }
-                                .padding(4.dp),
+                                .padding(1.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -406,14 +438,13 @@ private fun DragDropView(
                             )
                         }
                     }
-                    repeat(3 - rowWords.size) {
+                    repeat(columnsCount - rowWords.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
 
-        // Buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)

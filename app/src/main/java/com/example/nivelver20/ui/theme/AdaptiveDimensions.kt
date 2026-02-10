@@ -92,6 +92,7 @@ data class AdaptiveDimensions(
     val audioWordFontSize: Float,
 
     // lectura
+    val lecturaAnswerFontSize: Float,
 
     // Для экрана Grammar
     val grammarQuestionFontSize: Float,
@@ -199,16 +200,19 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 22.dp,
                 audioWordFontSize = 7f,
 
+                // lectura
+                lecturaAnswerFontSize = 12f,
+
                 // Ошибки
                 // Для экрана Grammar
-                grammarQuestionFontSize = 16f,
-                grammarAnswerFontSize = 14f,
-                grammarAnswerMinHeight = 45.dp,
-                grammarAnswerPadding = 10.dp,
-                grammarDragDropBoxHeight = 60.dp,
-                grammarWordButtonHeight = 40.dp,
-                grammarWordButtonFontSize = 13f,
-                grammarSpacingBetweenSections = 8.dp,
+                grammarQuestionFontSize = 13f,  // Было 14f → ещё меньше
+                grammarAnswerFontSize = 11f,    // Было 12f → ещё меньше
+                grammarAnswerMinHeight = 35.dp,  // Было 38.dp → ещё меньше
+                grammarAnswerPadding = 6.dp,    // Было 8.dp → минимум
+                grammarDragDropBoxHeight = 35.dp,  // Было 40.dp → ещё меньше
+                grammarWordButtonHeight = 26.dp,   // Было 28.dp → ещё меньше
+                grammarWordButtonFontSize = 9f,    // Было 10f → минимум
+                grammarSpacingBetweenSections = 2.dp,  // Было 3.dp → МИНИМУМ!
 
                 // Для экрана Perfil
                 perfilTitleFontSize = 22f,
@@ -276,17 +280,20 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 25.dp,
                 audioWordFontSize = 16f,
 
+                // lectura
+                lecturaAnswerFontSize = 13f,
+
                 // Ошибки
                 // Для экрана Grammar
+                grammarQuestionFontSize = 16f,  // Было 18f
+                grammarAnswerFontSize = 14f,    // Было 16f
+                grammarAnswerMinHeight = 42.dp,  // Было 50.dp - УМЕНЬШИЛИ!
+                grammarAnswerPadding = 10.dp,   // Было 12.dp
+                grammarDragDropBoxHeight = 55.dp,  // Было 60.dp
+                grammarWordButtonHeight = 38.dp,   // Было 40.dp
+                grammarWordButtonFontSize = 14f,   // Было 15f
+                grammarSpacingBetweenSections = 6.dp,  // Было 8.dp
 
-                grammarQuestionFontSize = 18f,
-                grammarAnswerFontSize = 16f,
-                grammarAnswerMinHeight = 50.dp,
-                grammarAnswerPadding = 12.dp,
-                grammarDragDropBoxHeight = 70.dp,
-                grammarWordButtonHeight = 45.dp,
-                grammarWordButtonFontSize = 15f,
-                grammarSpacingBetweenSections = 10.dp,
 
                 // Для экрана Perfil
                 perfilTitleFontSize = 26f,
@@ -354,16 +361,20 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 37.dp,
                 audioWordFontSize = 33f,
 
+                // lectura
+                lecturaAnswerFontSize = 16f,
+
                 // Ошибки
 
-                grammarQuestionFontSize = 20f,
-                grammarAnswerFontSize = 18f,
-                grammarAnswerMinHeight = 55.dp,
-                grammarAnswerPadding = 14.dp,
-                grammarDragDropBoxHeight = 80.dp,
-                grammarWordButtonHeight = 50.dp,
-                grammarWordButtonFontSize = 17f,
-                grammarSpacingBetweenSections = 12.dp,
+                grammarQuestionFontSize = 24f,  // Было 26f → немного меньше
+                grammarAnswerFontSize = 22f,    // Было 24f
+                grammarAnswerMinHeight = 65.dp, // Было 70.dp
+                grammarAnswerPadding = 18.dp,
+                grammarDragDropBoxHeight = 100.dp,  // Было 110.dp
+                grammarWordButtonHeight = 65.dp,    // Было 70.dp
+                grammarWordButtonFontSize = 21f,    // Было 23f
+                grammarSpacingBetweenSections = 16.dp,  // Было 18.dp
+
 
                 // Для экрана Perfil
                 perfilTitleFontSize = 32f,
@@ -431,16 +442,19 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 39.dp,
                 audioWordFontSize = 20f,
 
+                // lectura
+                lecturaAnswerFontSize = 18f,
+
                 // Для экрана Grammar
 
-                grammarQuestionFontSize = 22f,
-                grammarAnswerFontSize = 20f,
-                grammarAnswerMinHeight = 60.dp,
-                grammarAnswerPadding = 16.dp,
-                grammarDragDropBoxHeight = 90.dp,
-                grammarWordButtonHeight = 55.dp,
-                grammarWordButtonFontSize = 19f,
-                grammarSpacingBetweenSections = 14.dp,
+                grammarQuestionFontSize = 26f,  // Было 28f
+                grammarAnswerFontSize = 24f,    // Было 26f
+                grammarAnswerMinHeight = 72.dp, // Было 80.dp
+                grammarAnswerPadding = 20.dp,   // Было 22.dp
+                grammarDragDropBoxHeight = 110.dp,  // Было 120.dp
+                grammarWordButtonHeight = 72.dp,    // Было 80.dp
+                grammarWordButtonFontSize = 23f,    // Было 25f
+                grammarSpacingBetweenSections = 18.dp,  // Было 20.dp
 
                 // Для экрана Perfil
                 perfilTitleFontSize = 36f,
@@ -508,17 +522,20 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 42.dp,
                 audioWordFontSize = 38f,
 
+                // lectura
+                lecturaAnswerFontSize = 20f,
+
                 // Ошибки
 
                 // Для экрана Grammar
-                grammarQuestionFontSize = 26f,
-                grammarAnswerFontSize = 24f,
-                grammarAnswerMinHeight = 70.dp,
-                grammarAnswerPadding = 18.dp,
-                grammarDragDropBoxHeight = 100.dp,
-                grammarWordButtonHeight = 65.dp,
-                grammarWordButtonFontSize = 22f,
-                grammarSpacingBetweenSections = 16.dp,
+                grammarQuestionFontSize = 28f,  // Было 26f
+                grammarAnswerFontSize = 26f,    // Было 24f
+                grammarAnswerMinHeight = 75.dp, // Было 70.dp
+                grammarAnswerPadding = 20.dp,   // Было 18.dp
+                grammarDragDropBoxHeight = 110.dp,  // Было 100.dp
+                grammarWordButtonHeight = 70.dp,    // Было 65.dp
+                grammarWordButtonFontSize = 24f,    // Было 22f
+                grammarSpacingBetweenSections = 18.dp,  // Было 16.dp
 
                 // Для экрана Perfil
                 perfilTitleFontSize = 42f,
@@ -587,6 +604,8 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 answerItemMinHeight = 45.dp,
                 audioWordFontSize = 42f,
 
+                // lectura
+                lecturaAnswerFontSize = 26f,
                 // Ошибки
 
                 // Для экрана Grammar
@@ -665,6 +684,9 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 60.sp,
                 answerItemMinHeight = 50.dp,
                 audioWordFontSize = 46f,
+
+                // lectura
+                lecturaAnswerFontSize = 29f,
 
                 // Ошибки
 

@@ -196,7 +196,7 @@ fun LecturaScreen(
 
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing/2)
                     ) {
                         uiState.answers.forEachIndexed { index, answer ->
                             AnswerItem(
@@ -414,18 +414,18 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(horizontal = dimensions.vocabularioPadding, vertical = 8.dp),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.audioWordFontSize.sp,
+            fontSize = dimensions.lecturaAnswerFontSize.sp,
             fontWeight = FontWeight.Normal,
             color = textColor,
             textAlign = TextAlign.Center,
             style = androidx.compose.ui.text.TextStyle(
                 fontSize = dimensions.audioWordFontSize.sp,
-                lineHeight = (dimensions.audioWordFontSize * 1.2f).sp,
+                lineHeight = (dimensions.lecturaAnswerFontSize * 1.2f).sp,
                 platformStyle = androidx.compose.ui.text.PlatformTextStyle(
                     includeFontPadding = false
                 ),

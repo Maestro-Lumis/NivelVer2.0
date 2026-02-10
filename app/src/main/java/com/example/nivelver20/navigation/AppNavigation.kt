@@ -1,5 +1,6 @@
 package com.example.nivelver20.navigation
 
+import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -30,6 +31,9 @@ import com.example.nivelver20.ui.screens.vocabulario.VocabularioScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarResultsScreen
 import com.example.nivelver20.data.repository.FirestoreRepository
+import com.example.nivelver20.ui.screens.flujoTest.FlujoResultsScreen
+import com.example.nivelver20.ui.screens.flujoTest.FlujoScreen
+import com.example.nivelver20.ui.screens.flujoTest.FlujoViewModel
 import com.example.nivelver20.ui.screens.nivelTest.NivelResultsScreen
 import com.example.nivelver20.ui.screens.nivelTest.NivelScreen
 import kotlinx.coroutines.CoroutineScope
@@ -493,28 +497,27 @@ fun AppNavigation(
         }
 
         // FlujoScreen
-        composable(Routes.Flujo.route + "/{nivelId}") { backStackEntry ->
-            val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
-
-            // ВРЕМЕННЫЙ PLACEHOLDER - показываем сообщение
-            // В следующем шаге создадим полноценный FlujoScreen
-            androidx.compose.foundation.layout.Box(
-                modifier = androidx.compose.ui.Modifier.fillMaxSize().background(
-                    Brush.radialGradient(
-                        colors = listOf(
-                            Color(0xFFFFE97D),
-                            Color(0xFFFFB347)
-                        )
-                    )
-                ),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                androidx.compose.material3.Text(
-                    text = "FLUJO TEST\nNivel: $nivelId\n\n(В разработке...)",
-                    fontSize = 24.sp,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                )
+        composable(Routes.Flujo.route + "/{nivelId}") {
+            val viewModel = remember {
+                FlujoViewModel(context.applicationContext as Application)
             }
+
+            FlujoScreen(
+                navController = navController,
+                viewModel = viewModel
+            )
+        }
+
+        // Flujo Results
+        composable(Routes.FlujoResults.route) {
+            val viewModel = remember {
+                FlujoViewModel(context.applicationContext as Application)
+            }
+
+            FlujoResultsScreen(
+                navController = navController,
+                viewModel = viewModel
+            )
         }
     }
 }

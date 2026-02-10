@@ -358,14 +358,44 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
             "$currentAnswer $word"
         }
 
+        // Убираем слово из списка доступных
+        val currentWords = _uiState.value.dragDropWords.toMutableList()
+        val wordIndex = currentWords.indexOf(word)
+        if (wordIndex != -1) {
+            currentWords.removeAt(wordIndex)
+        }
+
         _uiState.update {
-            it.copy(userDragDropAnswer = newAnswer)
+            it.copy(
+                userDragDropAnswer = newAnswer,
+                dragDropWords = currentWords
+            )
         }
     }
 
     fun onDragDropClear() {
+        val currentAnswer = _uiState.value.userDragDropAnswer
+        if (currentAnswer.isEmpty()) return
+
+        // Разделяем на слова
+        val words = currentAnswer.split(" ").filter { it.isNotEmpty() }
+        if (words.isEmpty()) return
+
+        // Берем последнее слово
+        val lastWord = words.last()
+
+        // Удаляем последнее слово из ответа
+        val newAnswer = words.dropLast(1).joinToString(" ")
+
+        // Возвращаем последнее слово в список
+        val currentWords = _uiState.value.dragDropWords.toMutableList()
+        currentWords.add(lastWord)
+
         _uiState.update {
-            it.copy(userDragDropAnswer = "")
+            it.copy(
+                userDragDropAnswer = newAnswer,
+                dragDropWords = currentWords
+            )
         }
     }
 

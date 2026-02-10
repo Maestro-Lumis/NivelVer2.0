@@ -200,4 +200,42 @@ class SessionManager private constructor(context: Context) {
         _nivelResult.value = TestResult(nivel, correctCount, incorrectCount)
         Log.d("SessionManager", "Saved Nivel: $nivel, $correctCount/$incorrectCount")
     }
+
+    // ========== FLUJO TEST ==========
+    data class FlujoResult(
+        val finalLevel: String = "A1",
+        val totalQuestions: Int = 0,
+        val totalCorrect: Int = 0,
+        val levelResults: String = "{}" // JSON string
+    )
+
+    private fun loadFlujoResult(): FlujoResult {
+        return FlujoResult(
+            finalLevel = prefs.getString("flujo_final_level", "A1") ?: "A1",
+            totalQuestions = prefs.getInt("flujo_total_questions", 0),
+            totalCorrect = prefs.getInt("flujo_total_correct", 0),
+            levelResults = prefs.getString("flujo_level_results", "{}") ?: "{}"
+        )
+    }
+
+    fun saveFlujoResult(
+        finalLevel: String,
+        totalQuestions: Int,
+        totalCorrect: Int,
+        levelResults: String // JSON string
+    ) {
+        prefs.edit().apply {
+            putString("flujo_final_level", finalLevel)
+            putInt("flujo_total_questions", totalQuestions)
+            putInt("flujo_total_correct", totalCorrect)
+            putString("flujo_level_results", levelResults)
+            apply()
+        }
+
+        Log.d("SessionManager", "Saved Flujo: $finalLevel, $totalCorrect/$totalQuestions")
+    }
+
+    fun getFlujoResult(): FlujoResult {
+        return loadFlujoResult()
+    }
 }
