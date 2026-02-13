@@ -184,7 +184,7 @@ fun LecturaScreen(
 
                     Text(
                         text = uiState.question,
-                        fontSize = dimensions.vocabularioWordFontSize.sp,
+                        fontSize = dimensions.audioQuestion.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFf2edd0),
                         textAlign = TextAlign.Center,

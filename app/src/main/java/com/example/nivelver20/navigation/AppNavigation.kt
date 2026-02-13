@@ -1,6 +1,5 @@
 package com.example.nivelver20.navigation
 
-import android.app.Application
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -31,9 +30,6 @@ import com.example.nivelver20.ui.screens.vocabulario.VocabularioScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarScreen
 import com.example.nivelver20.ui.screens.grammar.GrammarResultsScreen
 import com.example.nivelver20.data.repository.FirestoreRepository
-import com.example.nivelver20.ui.screens.flujoTest.FlujoResultsScreen
-import com.example.nivelver20.ui.screens.flujoTest.FlujoScreen
-import com.example.nivelver20.ui.screens.flujoTest.FlujoViewModel
 import com.example.nivelver20.ui.screens.nivelTest.NivelResultsScreen
 import com.example.nivelver20.ui.screens.nivelTest.NivelScreen
 import kotlinx.coroutines.CoroutineScope
@@ -69,7 +65,7 @@ fun AppNavigation(
                     navController.navigate(Routes.NivelSelection.route + "?destination=lectura")
                 },
                 onNavigateToFlujo = {
-                    navController.navigate(Routes.NivelSelection.route + "?destination=flujo")
+                    navController.navigate(Routes.Flujo.route + "/A1")
                 },
                 onNavigateToNivel = {
                     navController.navigate(Routes.NivelSelection.route + "?destination=nivel")
@@ -95,7 +91,6 @@ fun AppNavigation(
                         "lectura" -> navController.navigate(Routes.Lectura.route + "/$nivelId")
                         "audio" -> navController.navigate(Routes.Audio.route + "/$nivelId")
                         "grammatica" -> navController.navigate(Routes.Grammatica.route + "/$nivelId")
-                        "flujo" -> navController.navigate(Routes.Flujo.route + "/$nivelId")
                         "nivel" -> navController.navigate(Routes.Nivel.route + "/$nivelId")
                         else -> navController.navigate(Routes.Vocabulario.route + "/$nivelId")
                     }
@@ -196,7 +191,7 @@ fun AppNavigation(
                         navController.navigate(Routes.NivelSelection.route + "?destination=nivel")
                     },
                     onNavigateToFlujo = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=flujo")
+                        navController.navigate(Routes.Flujo.route + "/A1")
                     },
                     onNavigateToVocabulario = {
                         navController.navigate(
@@ -496,25 +491,42 @@ fun AppNavigation(
             )
         }
 
-        // FlujoScreen
-        composable(Routes.Flujo.route + "/{nivelId}") {
+        // ========== FLUJO TEST ==========
+        composable(Routes.Flujo.route + "/{nivelId}") { backStackEntry ->
+            val nivelId = backStackEntry.arguments?.getString("nivelId") ?: "A1"
+
             val viewModel = remember {
-                FlujoViewModel(context.applicationContext as Application)
+                com.example.nivelver20.ui.screens.flujoTest.FlujoViewModel(
+                    context.applicationContext as android.app.Application
+                )
             }
 
-            FlujoScreen(
+            com.example.nivelver20.ui.screens.flujoTest.FlujoScreen(
                 navController = navController,
-                viewModel = viewModel
+                viewModel = viewModel,
+                onNavigateToTest = {
+                    navController.popBackStack(Routes.Main.route, false)
+                },
+                onNavigateToPerfil = {
+                    if (isLoggedIn) {
+                        navController.navigate(Routes.Perfil.route)
+                    } else {
+                        navController.navigate(Routes.Login.route)
+                    }
+                },
+                userName = sessionManager.getCurrentUser() ?: "NOMBRE"
             )
         }
 
         // Flujo Results
         composable(Routes.FlujoResults.route) {
             val viewModel = remember {
-                FlujoViewModel(context.applicationContext as Application)
+                com.example.nivelver20.ui.screens.flujoTest.FlujoViewModel(
+                    context.applicationContext as android.app.Application
+                )
             }
 
-            FlujoResultsScreen(
+            com.example.nivelver20.ui.screens.flujoTest.FlujoResultsScreen(
                 navController = navController,
                 viewModel = viewModel
             )

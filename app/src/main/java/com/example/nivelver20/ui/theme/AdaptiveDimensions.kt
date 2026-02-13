@@ -90,6 +90,7 @@ data class AdaptiveDimensions(
     val lineHeightForAudAndLect: TextUnit,
     val answerItemMinHeight: Dp,
     val audioWordFontSize: Float,
+    val audioQuestion: Float,
 
     // lectura
     val lecturaAnswerFontSize: Float,
@@ -104,7 +105,12 @@ data class AdaptiveDimensions(
     val grammarWordButtonFontSize: Float,
     val grammarSpacingBetweenSections: Dp,
 
-)
+    // Для Flujo Warning Screen
+    val flujoWarningTitleFontSize: Float,
+    val flujoWarningTextFontSize: Float,
+    val flujoWarningIconFontSize: Float,
+
+    )
 
 enum class ScreenType {
     SMALL_PHONE,    // 3.5" - 4.5"
@@ -199,6 +205,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 25.sp,
                 answerItemMinHeight = 22.dp,
                 audioWordFontSize = 7f,
+                audioQuestion = 13f,
 
                 // lectura
                 lecturaAnswerFontSize = 12f,
@@ -223,6 +230,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 8.dp,
                 perfilTopPadding = 10.dp,
                 perfilBottomPadding = 10.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 22f,
+                flujoWarningTextFontSize = 18f,
+                flujoWarningIconFontSize = 14f,
             )
 
             ScreenType.MEDIUM_PHONE -> AdaptiveDimensions(
@@ -279,6 +291,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 30.sp,
                 answerItemMinHeight = 25.dp,
                 audioWordFontSize = 16f,
+                audioQuestion = 17f,
 
                 // lectura
                 lecturaAnswerFontSize = 13f,
@@ -304,6 +317,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 10.dp,
                 perfilTopPadding = 12.dp,
                 perfilBottomPadding = 12.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 26f,
+                flujoWarningTextFontSize = 22f,
+                flujoWarningIconFontSize = 16f,
             )
 
             ScreenType.LARGE_PHONE -> AdaptiveDimensions(
@@ -360,6 +378,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 35.sp,
                 answerItemMinHeight = 37.dp,
                 audioWordFontSize = 33f,
+                audioQuestion = 20f,
 
                 // lectura
                 lecturaAnswerFontSize = 16f,
@@ -385,6 +404,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 12.dp,
                 perfilTopPadding = 15.dp,
                 perfilBottomPadding = 15.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 32f,
+                flujoWarningTextFontSize = 28f,
+                flujoWarningIconFontSize = 22f,
             )
 
             ScreenType.XLARGE_PHONE -> AdaptiveDimensions(
@@ -441,6 +465,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 40.sp,
                 answerItemMinHeight = 39.dp,
                 audioWordFontSize = 20f,
+                audioQuestion = 23f,
 
                 // lectura
                 lecturaAnswerFontSize = 18f,
@@ -465,6 +490,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 14.dp,
                 perfilTopPadding = 16.dp,
                 perfilBottomPadding = 16.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 36f,
+                flujoWarningTextFontSize = 32f,
+                flujoWarningIconFontSize = 28f,
             )
 
             ScreenType.SMALL_TABLET -> AdaptiveDimensions(
@@ -521,6 +551,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 45.sp,
                 answerItemMinHeight = 42.dp,
                 audioWordFontSize = 38f,
+                audioQuestion = 30f,
 
                 // lectura
                 lecturaAnswerFontSize = 20f,
@@ -546,6 +577,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 16.dp,
                 perfilTopPadding = 18.dp,
                 perfilBottomPadding = 18.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 42f,
+                flujoWarningTextFontSize = 38f,
+                flujoWarningIconFontSize = 30f,
 
             )
 
@@ -603,6 +639,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 55.sp,
                 answerItemMinHeight = 45.dp,
                 audioWordFontSize = 42f,
+                audioQuestion = 40f,
 
                 // lectura
                 lecturaAnswerFontSize = 26f,
@@ -627,6 +664,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 18.dp,
                 perfilTopPadding = 20.dp,
                 perfilBottomPadding = 20.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 50f,
+                flujoWarningTextFontSize = 46f,
+                flujoWarningIconFontSize = 38f,
 
             )
 
@@ -684,6 +726,7 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 lineHeightForAudAndLect = 60.sp,
                 answerItemMinHeight = 50.dp,
                 audioWordFontSize = 46f,
+                audioQuestion = 45f,
 
                 // lectura
                 lecturaAnswerFontSize = 29f,
@@ -710,6 +753,11 @@ fun rememberAdaptiveDimensions(): AdaptiveDimensions {
                 perfilSpacingBetweenButtons = 20.dp,
                 perfilTopPadding = 24.dp,
                 perfilBottomPadding = 24.dp,
+
+                // Flujo Warning Screen
+                flujoWarningTitleFontSize = 56f,
+                flujoWarningTextFontSize = 48f,
+                flujoWarningIconFontSize = 40f,
             )
         }
     }

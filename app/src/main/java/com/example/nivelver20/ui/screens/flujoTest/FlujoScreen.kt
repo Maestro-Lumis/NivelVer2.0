@@ -18,16 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
-import com.example.nivelver20.data.repository.FirestoreRepository
-import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 import androidx.navigation.NavController
 
@@ -36,12 +32,17 @@ fun FlujoScreen(
     navController: NavController,
     viewModel: FlujoViewModel,
     onNavigateToTest: () -> Unit = {},
-    onNavigateToPerfil: () -> Unit = {}
+    onNavigateToPerfil: () -> Unit = {},
+    userName: String = "NOMBRE"
 ) {
     val dimensions = rememberAdaptiveDimensions()
     val uiState by viewModel.uiState.collectAsState()
 
+    // Warning screen state
     var showWarningScreen by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+    }
 
     BackHandler {
         if (!showWarningScreen) {
@@ -51,22 +52,21 @@ fun FlujoScreen(
         }
     }
 
-    // Экран начала теста
+    // Show warning screen first
     if (showWarningScreen) {
         FlujoWarningScreen(
             onStart = {
                 showWarningScreen = false
                 viewModel.startTest()
             },
-            onCancel = { navController.popBackStack() },
             onNavigateToTest = onNavigateToTest,
             onNavigateToPerfil = onNavigateToPerfil,
-            dimensions = dimensions
+            viewModel = viewModel
         )
         return
     }
 
-    // Навигация после выполнения теста
+    // Navigate to results when complete
     if (uiState.isTestComplete) {
         LaunchedEffect(Unit) {
             navController.navigate(com.example.nivelver20.navigation.Routes.FlujoResults.route) {
@@ -76,6 +76,7 @@ fun FlujoScreen(
         return
     }
 
+    // Show dialogs
     if (uiState.showExitDialog) {
         ExitDialog(
             onConfirm = { viewModel.confirmExit() },
@@ -150,35 +151,41 @@ fun FlujoScreen(
         ) {
             Spacer(modifier = Modifier.height(dimensions.verticalPadding))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            // Top row: Level, Progress, Username
+            Box(
+                modifier = Modifier.fillMaxWidth()
             ) {
+                // Левый текст (уровень)
                 Text(
                     text = uiState.currentLevel,
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.CenterStart)
                 )
 
+                // Центральный текст
                 Text(
                     text = "${uiState.currentQuestionIndex + 1}/4",
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.Center)
                 )
 
+                // Правый текст (имя)
                 Text(
-                    text = "FLUJO",
+                    text = userName,
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.CenterEnd)
                 )
             }
 
             Spacer(modifier = Modifier.height(dimensions.verticalPadding))
 
-            // Бокс с информацией
+            // Main content box
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -247,6 +254,7 @@ fun FlujoScreen(
 
             Spacer(modifier = Modifier.height(dimensions.verticalPadding))
 
+            // Bottom buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -268,227 +276,6 @@ fun FlujoScreen(
                 )
             }
         }
-    }
-}
-
-// ========== WARNING SCREEN ==========
-@Composable
-private fun FlujoWarningScreen(
-    onStart: () -> Unit,
-    onCancel: () -> Unit,
-    onNavigateToTest: () -> Unit,
-    onNavigateToPerfil: () -> Unit,
-    dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF02214a)),
-        contentAlignment = Alignment.Center
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.espanol_logo),
-            contentDescription = "Background",
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .fillMaxHeight(0.7f),
-            alpha = 0.15f,
-            contentScale = ContentScale.Fit
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = dimensions.horizontalPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "TEST DE FLUJO",
-                fontSize = (dimensions.vocabularioTitleFontSize * 1.5f).sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFa3b944),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(dimensions.verticalPadding * 2))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFFFF6EC7),
-                                Color(0xFFFFE97D)
-                            )
-                        ),
-                        alpha = 0.55f,
-                        shape = RoundedCornerShape(dimensions.buttonCornerRadius)
-                    )
-                    .padding(dimensions.horizontalPadding)
-            ) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
-                ) {
-                    Spacer(modifier = Modifier.height(dimensions.spaceBetweenButtons))
-
-                    InfoRow(
-                        icon = "📝",
-                        text = "Hasta 16 preguntas (4 por nivel)",
-                        dimensions = dimensions
-                    )
-
-                    InfoRow(
-                        icon = "🎯",
-                        text = "4 tipos de ejercicios: Vocabulario, Gramática, Audio, Lectura",
-                        dimensions = dimensions
-                    )
-
-                    InfoRow(
-                        icon = "⚡",
-                        text = "Necesitas 3 de 4 respuestas correctas para avanzar",
-                        dimensions = dimensions
-                    )
-
-                    InfoRow(
-                        icon = "⚠️",
-                        text = "Este test puede ser largo. Tómate tu tiempo.",
-                        dimensions = dimensions
-                    )
-
-                    Spacer(modifier = Modifier.height(dimensions.spaceBetweenButtons))
-                }
-            }
-
-            Spacer(modifier = Modifier.height(dimensions.verticalPadding * 2))
-
-            // COMENZAR button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(dimensions.bottomButtonHeight)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFF48C553),
-                                Color(0xFF48C553)
-                            )
-                        ),
-                        shape = RoundedCornerShape(dimensions.buttonCornerRadius)
-                    )
-            ) {
-                Button(
-                    onClick = onStart,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(2.dp),
-                    shape = RoundedCornerShape(dimensions.buttonCornerRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF02214a)
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "COMENZAR",
-                        fontSize = dimensions.bottomButtonFontSize.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFf2edd0),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(dimensions.spaceBetweenButtons))
-
-            // CANCELAR button
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(dimensions.bottomButtonHeight)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            colors = listOf(
-                                Color(0xFFC42D2C),
-                                Color(0xFFC42D2C)
-                            )
-                        ),
-                        shape = RoundedCornerShape(dimensions.buttonCornerRadius)
-                    )
-            ) {
-                Button(
-                    onClick = onCancel,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(2.dp),
-                    shape = RoundedCornerShape(dimensions.buttonCornerRadius),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF02214a)
-                    ),
-                    contentPadding = PaddingValues(0.dp)
-                ) {
-                    Text(
-                        text = "CANCELAR",
-                        fontSize = dimensions.bottomButtonFontSize.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFf2edd0),
-                        textAlign = TextAlign.Center
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(dimensions.verticalPadding))
-
-            // TEST and PERFIL buttons
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = dimensions.verticalPadding),
-                horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
-            ) {
-                BottomButton(
-                    text = "TEST",
-                    onClick = onNavigateToTest,
-                    dimensions = dimensions,
-                    modifier = Modifier.weight(1f)
-                )
-
-                BottomButton(
-                    text = "PERFIL",
-                    onClick = onNavigateToPerfil,
-                    dimensions = dimensions,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun InfoRow(
-    icon: String,
-    text: String,
-    dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
-) {
-    Row(
-        verticalAlignment = Alignment.Top,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = icon,
-            fontSize = (dimensions.vocabularioTitleFontSize * 0.8f).sp,
-            modifier = Modifier.padding(end = dimensions.spaceBetweenButtons)
-        )
-        Text(
-            text = text,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
-            color = Color(0xFFf2edd0),
-            lineHeight = (dimensions.vocabularioWordFontSize * 1.4f).sp
-        )
     }
 }
 
@@ -671,10 +458,10 @@ private fun GrammarContent(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(dimensions.vocabularioPadding),
+            .fillMaxSize(),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
         Text(
             text = "GRAMÁTICA",
             fontSize = dimensions.vocabularioTitleFontSize.sp,
@@ -715,6 +502,8 @@ private fun GrammarContent(
             }
         }
 
+        Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly
@@ -733,6 +522,8 @@ private fun GrammarContent(
                 color = Color(0xFF48C553)
             )
         }
+
+        Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
     }
 }
 
@@ -839,38 +630,75 @@ private fun DragDropView(
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = questionText,
-            fontSize = dimensions.grammarQuestionFontSize.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(dimensions.grammarDragDropBoxHeight)
-                .background(Color(0xFFF5F5DC), RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
-                .padding(dimensions.grammarAnswerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = userDragDropAnswer.ifEmpty { "Toca las palabras..." },
-                fontSize = dimensions.grammarAnswerFontSize.sp,
-                color = if (userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
-                textAlign = TextAlign.Center
-            )
-        }
-
+        // Вопрос и поле для ответа
         Column(
             modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
-            dragDropWords.chunked(3).forEach { rowWords ->
+            Text(
+                text = questionText,
+                fontSize = dimensions.grammarQuestionFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+
+            // Поле для ответа с адаптивной высотой
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = dimensions.grammarDragDropBoxHeight)
+                    .wrapContentHeight()
+                    .background(
+                        color = Color(0xFFF5F5DC),
+                        shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                    )
+                    .padding(dimensions.grammarAnswerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = userDragDropAnswer.ifEmpty { "Toca las palabras..." },
+                    fontSize = dimensions.grammarAnswerFontSize.sp,
+                    color = if (userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Слова для перетаскивания с прокруткой
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            val words = dragDropWords
+            val wordCount = words.size
+
+            // Адаптивное количество колонок
+            val columnsCount = when {
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.SMALL_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.MEDIUM_PHONE -> 2
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.LARGE_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.XLARGE_PHONE -> {
+                    when {
+                        wordCount <= 6 -> 2
+                        else -> 3
+                    }
+                }
+                else -> 3
+            }
+
+            words.chunked(columnsCount).forEach { rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
@@ -880,9 +708,12 @@ private fun DragDropView(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(dimensions.grammarWordButtonHeight)
-                                .background(Color(0xFFa3b944), RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
+                                .background(
+                                    color = Color(0xFFa3b944),
+                                    shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                                )
                                 .clickable { onWordClick(word) }
-                                .padding(4.dp),
+                                .padding(1.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -894,37 +725,57 @@ private fun DragDropView(
                             )
                         }
                     }
-                    repeat(3 - rowWords.size) {
+                    repeat(columnsCount - rowWords.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
 
+        // Кнопки BORRAR и ENVIAR
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
         ) {
             Button(
                 onClick = onClear,
-                modifier = Modifier.weight(1f).height(dimensions.grammarWordButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC42D2C)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFC42D2C)
+                ),
                 shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("BORRAR", color = Color.White, fontSize = dimensions.grammarWordButtonFontSize.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "BORRAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Button(
                 onClick = onSubmit,
-                modifier = Modifier.weight(1f).height(dimensions.grammarWordButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF48C553)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF48C553)
+                ),
                 shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("ENVIAR", color = Color.White, fontSize = dimensions.grammarWordButtonFontSize.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "ENVIAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
+
 
 // ========== AUDIO CONTENT ==========
 @Composable
@@ -1030,7 +881,7 @@ private fun AudioContent(
 
         Text(
             text = question.pregunta,
-            fontSize = dimensions.buttonFontSize.sp,
+            fontSize = dimensions.audioQuestion.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
@@ -1042,7 +893,7 @@ private fun AudioContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
         ) {
             answers.forEachIndexed { index, answer ->
                 AnswerItem(answer, { onAnswerClick(index) }, dimensions)
@@ -1121,7 +972,7 @@ private fun LecturaContent(
 
         Text(
             text = question.pregunta,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.audioQuestion.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
@@ -1133,7 +984,7 @@ private fun LecturaContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
         ) {
             answers.forEachIndexed { index, answer ->
                 AnswerItem(answer, { onAnswerClick(index) }, dimensions)
@@ -1197,7 +1048,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(dimensions.answerItemMinHeight)
+            .wrapContentHeight()  // ← ИЗМЕНЕНО: было heightIn(dimensions.answerItemMinHeight)
             .background(backgroundColor, RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
@@ -1205,15 +1056,29 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(vertical = 12.dp, horizontal = dimensions.vocabularioPadding),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),  // ← ИЗМЕНЕНО
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.lecturaAnswerFontSize.sp,  // ← ИЗМЕНЕНО: был vocabularioWordFontSize
             fontWeight = FontWeight.Normal,
             color = textColor,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            style = androidx.compose.ui.text.TextStyle(  // ← ДОБАВЛЕНО: весь style блок
+                fontSize = dimensions.audioWordFontSize.sp,
+                lineHeight = (dimensions.lecturaAnswerFontSize * 1.2f).sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()  // ← ДОБАВЛЕНО
         )
     }
 }

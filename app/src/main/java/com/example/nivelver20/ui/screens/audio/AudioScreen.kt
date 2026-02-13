@@ -249,7 +249,7 @@ fun AudioScreen(
 
                     Text(
                         text = uiState.question,
-                        fontSize = dimensions.buttonFontSize.sp,
+                        fontSize = dimensions.audioQuestion.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFf2edd0),
                         textAlign = TextAlign.Center,
@@ -261,7 +261,7 @@ fun AudioScreen(
 
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing/2)
                     ) {
                         uiState.answers.forEachIndexed { index, answer ->
                             AnswerItem(
@@ -464,7 +464,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(dimensions.answerItemMinHeight)
+            .wrapContentHeight()
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
@@ -479,15 +479,29 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(vertical = 12.dp, horizontal = dimensions.vocabularioPadding),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.lecturaAnswerFontSize.sp,
             fontWeight = FontWeight.Normal,
             color = textColor,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = dimensions.audioWordFontSize.sp,
+                lineHeight = (dimensions.lecturaAnswerFontSize * 1.2f).sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
         )
     }
 }

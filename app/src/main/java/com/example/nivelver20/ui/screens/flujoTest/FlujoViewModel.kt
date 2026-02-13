@@ -154,7 +154,14 @@ data class FlujoState(
 
     // Exit dialog
     val showExitDialog: Boolean = false,
-    val pendingNavigation: (() -> Unit)? = null
+    val pendingNavigation: (() -> Unit)? = null,
+
+    val warningInfoList: List<Pair<String, String>> = listOf(
+    "📝" to "Hasta 16 preguntas (4 por nivel)",
+    "🎯" to "4 tipos de ejercicios: Vocabulario, Gramática, Audio, Lectura",
+    "⚡" to "Necesitas 3 de 4 respuestas correctas para avanzar",
+    "⚠️" to "Este test puede ser largo. Tómate tu tiempo."
+    )
 )
 
 // ========== VIEW MODEL ==========
@@ -807,6 +814,7 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update { it.copy(showLevelCompleteDialog = false) }
             cargarPreguntasNivel(nextLevel)
         } else {
+            // Last level completed
             stopTest()
         }
     }
@@ -859,6 +867,22 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
 
         sessionManager.saveFlujoResult(finalLevel, totalQuestions, totalCorrect, levelResultsJson)
         Log.d("FlujoVM", "Results saved: $finalLevel ($totalCorrect/$totalQuestions)")
+
+        val currentUser = sessionManager.getCurrentUser()
+        if (currentUser != null) {
+            viewModelScope.launch {
+                try {
+                    val result = repository.updateUserNivel(currentUser, finalLevel)
+                    if (result.isSuccess) {
+                        Log.d("FlujoVM", "User level updated in Firebase: $finalLevel")
+                    } else {
+                        Log.e("FlujoVM", "Failed to update user level: ${result.exceptionOrNull()?.message}")
+                    }
+                } catch (e: Exception) {
+                    Log.e("FlujoVM", "Error updating user level: ${e.message}")
+                }
+            }
+        }
     }
 
     // ========== EXIT DIALOG ==========
@@ -880,7 +904,6 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                 pendingNavigation = null
             )
         }
-        saveResults()
         pendingNav?.invoke()
     }
 

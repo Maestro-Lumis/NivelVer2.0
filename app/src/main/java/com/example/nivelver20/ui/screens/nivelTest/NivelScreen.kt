@@ -109,29 +109,34 @@ fun NivelScreen(
         ) {
             Spacer(modifier = Modifier.height(dimensions.verticalPadding))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+            Box(
+                modifier = Modifier.fillMaxWidth()
             ) {
+                // Левый текст
                 Text(
                     text = uiState.nivel,
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.CenterStart)
                 )
 
+                // Центральный текст
                 Text(
                     text = "${uiState.currentQuestionIndex + 1}/${uiState.totalQuestions}",
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.Center)
                 )
 
+                // Правый текст
                 Text(
                     text = uiState.userName,
                     fontSize = dimensions.loginLabelFontSize.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFa3b944)
+                    color = Color(0xFFa3b944),
+                    modifier = Modifier.align(Alignment.CenterEnd)
                 )
             }
 
@@ -536,38 +541,75 @@ private fun DragDropView(
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceEvenly
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = uiState.currentQuestion?.questionText ?: "",
-            fontSize = dimensions.grammarQuestionFontSize.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFf2edd0),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(dimensions.grammarDragDropBoxHeight)
-                .background(Color(0xFFF5F5DC), RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
-                .padding(dimensions.grammarAnswerPadding),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras..." },
-                fontSize = dimensions.grammarAnswerFontSize.sp,
-                color = if (uiState.userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
-                textAlign = TextAlign.Center
-            )
-        }
-
+        // Вопрос и поле для ответа
         Column(
             modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
-            uiState.dragDropWords.chunked(3).forEach { rowWords ->
+            Text(
+                text = uiState.currentQuestion?.questionText ?: "",
+                fontSize = dimensions.grammarQuestionFontSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFf2edd0),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+            )
+
+            // Поле для ответа с адаптивной высотой
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = dimensions.grammarDragDropBoxHeight)
+                    .wrapContentHeight()
+                    .background(
+                        color = Color(0xFFF5F5DC),
+                        shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                    )
+                    .padding(dimensions.grammarAnswerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = uiState.userDragDropAnswer.ifEmpty { "Toca las palabras..." },
+                    fontSize = dimensions.grammarAnswerFontSize.sp,
+                    color = if (uiState.userDragDropAnswer.isEmpty()) Color.Gray else Color(0xFF003D5B),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        // Слова для перетаскивания с прокруткой
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
+        ) {
+            val words = uiState.dragDropWords
+            val wordCount = words.size
+
+            // Адаптивное количество колонок
+            val columnsCount = when {
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.SMALL_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.MEDIUM_PHONE -> 2
+                dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.LARGE_PHONE ||
+                        dimensions.screenType == com.example.nivelver20.ui.theme.ScreenType.XLARGE_PHONE -> {
+                    when {
+                        wordCount <= 6 -> 2
+                        else -> 3
+                    }
+                }
+                else -> 3
+            }
+
+            words.chunked(columnsCount).forEach { rowWords ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
@@ -577,9 +619,12 @@ private fun DragDropView(
                             modifier = Modifier
                                 .weight(1f)
                                 .height(dimensions.grammarWordButtonHeight)
-                                .background(Color(0xFFa3b944), RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
+                                .background(
+                                    color = Color(0xFFa3b944),
+                                    shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                                )
                                 .clickable { onWordClick(word) }
-                                .padding(4.dp),
+                                .padding(1.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
@@ -591,33 +636,52 @@ private fun DragDropView(
                             )
                         }
                     }
-                    repeat(3 - rowWords.size) {
+                    repeat(columnsCount - rowWords.size) {
                         Spacer(modifier = Modifier.weight(1f))
                     }
                 }
             }
         }
 
+        // Кнопки BORRAR и ENVIAR
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
         ) {
             Button(
                 onClick = onClear,
-                modifier = Modifier.weight(1f).height(dimensions.grammarWordButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC42D2C)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFC42D2C)
+                ),
                 shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("BORRAR", color = Color.White, fontSize = dimensions.grammarWordButtonFontSize.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "BORRAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
 
             Button(
                 onClick = onSubmit,
-                modifier = Modifier.weight(1f).height(dimensions.grammarWordButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF48C553)),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(dimensions.grammarWordButtonHeight),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF48C553)
+                ),
                 shape = RoundedCornerShape(dimensions.buttonCornerRadius)
             ) {
-                Text("ENVIAR", color = Color.White, fontSize = dimensions.grammarWordButtonFontSize.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "ENVIAR",
+                    color = Color.White,
+                    fontSize = dimensions.grammarWordButtonFontSize.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -719,7 +783,7 @@ private fun AudioContent(
 
         Text(
             text = uiState.currentQuestion?.questionText ?: "",
-            fontSize = dimensions.buttonFontSize.sp,
+            fontSize = dimensions.audioQuestion.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
@@ -731,7 +795,7 @@ private fun AudioContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
         ) {
             uiState.answers.forEachIndexed { index, answer ->
                 AnswerItem(answer, { onAnswerClick(index) }, dimensions)
@@ -806,7 +870,7 @@ private fun LecturaContent(
 
         Text(
             text = uiState.currentQuestion?.questionText ?: "",
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.audioQuestion.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
@@ -818,7 +882,7 @@ private fun LecturaContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing)
+            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
         ) {
             uiState.answers.forEachIndexed { index, answer ->
                 AnswerItem(answer, { onAnswerClick(index) }, dimensions)
@@ -849,7 +913,6 @@ private fun LecturaContent(
         Spacer(modifier = Modifier.height(dimensions.vocabularioPadding / 2))
     }
 }
-
 @Composable
 private fun AnswerItem(
     answer: NivelAnswerItem,
@@ -857,7 +920,7 @@ private fun AnswerItem(
     dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
 ) {
     val borderColor = when (answer.state) {
-        NivelCardState.NORMAL -> Color.Transparent
+        NivelCardState.NORMAL -> Color.Transparent  // ← ПРАВИЛЬНЫЙ ENUM!
         NivelCardState.SELECTED -> Color(0xCB02214A)
         NivelCardState.SHOWING_SUCCESS -> Color(0xFF48C553)
         NivelCardState.INCORRECT -> Color(0xFFC42D2C)
@@ -881,7 +944,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(dimensions.answerItemMinHeight)
+            .wrapContentHeight()
             .background(backgroundColor, RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
@@ -889,15 +952,29 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(vertical = 12.dp, horizontal = dimensions.vocabularioPadding),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = answer.text,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            fontSize = dimensions.lecturaAnswerFontSize.sp,
             fontWeight = FontWeight.Normal,
             color = textColor,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            style = androidx.compose.ui.text.TextStyle(
+                fontSize = dimensions.audioWordFontSize.sp,
+                lineHeight = (dimensions.lecturaAnswerFontSize * 1.2f).sp,
+                platformStyle = androidx.compose.ui.text.PlatformTextStyle(
+                    includeFontPadding = false
+                ),
+                lineHeightStyle = androidx.compose.ui.text.style.LineHeightStyle(
+                    alignment = androidx.compose.ui.text.style.LineHeightStyle.Alignment.Center,
+                    trim = androidx.compose.ui.text.style.LineHeightStyle.Trim.Both
+                )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
         )
     }
 }
