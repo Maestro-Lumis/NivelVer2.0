@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.nivelver20.R
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 import androidx.navigation.NavController
+import com.google.android.gms.common.util.CollectionUtils.listOf
 
 @Composable
 fun FlujoScreen(
@@ -208,8 +210,8 @@ fun FlujoScreen(
                         russianCards = uiState.russianCards,
                         onSpanishClick = { viewModel.onSpanishCardClick(it) },
                         onRussianClick = { viewModel.onRussianCardClick(it) },
-                        correctCount = uiState.correctInLevel,
-                        incorrectCount = uiState.incorrectInLevel,
+                        correctCount = uiState.vocabCorrectPairs,
+                        incorrectCount = 0,
                         dimensions = dimensions
                     )
                     is FlujoQuestion.Grammar -> GrammarContent(
@@ -366,22 +368,51 @@ private fun VocabContent(
 
         Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
+        // ТОЛЬКО ПРОГРЕСС-БАР (БЕЗ СЧЁТЧИКОВ ТЕСТА)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimensions.vocabularioPadding * 2),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
-                text = incorrectCount.toString(),
-                fontSize = dimensions.vocabularioCounterFontSize.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFC42D2C)
-            )
+            // Прогресс-бар
+            val progress = correctCount / 8f
 
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(dimensions.vocabularioCardSpacing * 1.5f)
+                    .background(
+                        color = Color(0x40FFFFFF),
+                        shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                    )
+            ) {
+                // Заполненная часть
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .fillMaxHeight()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFF48C553),
+                                    Color(0xFFa3b944)
+                                )
+                            ),
+                            shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
+                        )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing / 2))
+
+            // Текст "5/8"
             Text(
-                text = correctCount.toString(),
+                text = "$correctCount/8",
                 fontSize = dimensions.vocabularioCounterFontSize.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF48C553)
+                color = Color(0xFFa3b944),
+                textAlign = TextAlign.Center
             )
         }
 
@@ -1048,7 +1079,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()  // ← ИЗМЕНЕНО: было heightIn(dimensions.answerItemMinHeight)
+            .wrapContentHeight()
             .background(backgroundColor, RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
@@ -1200,7 +1231,7 @@ private fun StopDialog(
         containerColor = Color(0xFF003D5B),
         title = {
             Text(
-                text = "Tu nivel actual: $level",
+                text = "Tu nivel: $level",
                 fontSize = dimensions.loginLabelFontSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFFa3b944),
@@ -1221,7 +1252,7 @@ private fun StopDialog(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "¿Quieres terminar o intentar el siguiente nivel?",
+                    text = "El test ha finalizado.",
                     fontSize = dimensions.exitDialog.sp,
                     color = Color(0xFFf2edd0),
                     textAlign = TextAlign.Center
@@ -1229,60 +1260,29 @@ private fun StopDialog(
             }
         },
         confirmButton = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(dimensions.spaceBetweenButtons)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(dimensions.bottomButtonHeight)
+                    .background(
+                        brush = Brush.horizontalGradient(listOf(Color(0xFFA985F0), Color(0xFF85EDFF))),
+                        shape = RoundedCornerShape(dimensions.buttonCornerRadius)
+                    )
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(dimensions.bottomButtonHeight)
-                        .background(
-                            brush = Brush.horizontalGradient(listOf(Color(0xFF48C553), Color(0xFF48C553))),
-                            shape = RoundedCornerShape(dimensions.buttonCornerRadius)
-                        )
+                Button(
+                    onClick = onStop,
+                    modifier = Modifier.fillMaxSize().padding(2.dp),
+                    shape = RoundedCornerShape(dimensions.buttonCornerRadius),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF003D5B)),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
-                    Button(
-                        onClick = onContinue,
-                        modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = RoundedCornerShape(dimensions.buttonCornerRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF02214a)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = "Continuar",
-                            fontSize = dimensions.exitDialog.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFf2edd0),
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(dimensions.bottomButtonHeight)
-                        .background(
-                            brush = Brush.horizontalGradient(listOf(Color(0xFFC42D2C), Color(0xFFC42D2C))),
-                            shape = RoundedCornerShape(dimensions.buttonCornerRadius)
-                        )
-                ) {
-                    Button(
-                        onClick = onStop,
-                        modifier = Modifier.fillMaxSize().padding(2.dp),
-                        shape = RoundedCornerShape(dimensions.buttonCornerRadius),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF02214a)),
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = "Terminar",
-                            fontSize = dimensions.exitDialog.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFf2edd0),
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    Text(
+                        text = "Ver resultados",
+                        fontSize = dimensions.exitDialog.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFa3b944),
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         },

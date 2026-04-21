@@ -50,7 +50,7 @@ data class FlujoWordCard(
 // Grammar
 data class FlujoGrammarQuestion(
     val nivel: String,
-    val tipo: String, // multiple_choice, error_correction, drag_drop
+    val tipo: String,
     val pregunta: String,
     val opciones: List<FlujoGrammarOpcion>,
     val fraseIncorrecta: String? = null,
@@ -92,7 +92,7 @@ data class FlujoLecturaOpcion(
     val correcta: Boolean
 )
 
-// Answer item (for Grammar, Audio, Lectura)
+// Answer item
 data class FlujoAnswerItem(
     val id: Int,
     val text: String,
@@ -137,10 +137,14 @@ data class FlujoState(
     val russianCards: List<FlujoWordCard> = emptyList(),
     val selectedSpanish: Int? = null,
     val selectedRussian: Int? = null,
+    val vocabCorrectPairs: Int = 0,  // ← НОВОЕ: счетчик правильных пар
+    val vocabTotalPairs: Int = 8,
+    val vocabThreshold: Int = 5,  // ← НОВОЕ: порог для прохода (62.5%)
 
     // Grammar/Audio/Lectura
     val answers: List<FlujoAnswerItem> = emptyList(),
     val selectedAnswer: Int? = null,
+    val isProcessingAnswer: Boolean = false,  // Блокировка быстрых кликов
 
     // Grammar drag-drop
     val dragDropWords: List<String> = emptyList(),
@@ -157,10 +161,10 @@ data class FlujoState(
     val pendingNavigation: (() -> Unit)? = null,
 
     val warningInfoList: List<Pair<String, String>> = listOf(
-    "📝" to "Hasta 16 preguntas (4 por nivel)",
-    "🎯" to "4 tipos de ejercicios: Vocabulario, Gramática, Audio, Lectura",
-    "⚡" to "Necesitas 3 de 4 respuestas correctas para avanzar",
-    "⚠️" to "Este test puede ser largo. Tómate tu tiempo."
+        "📝" to "Hasta 16 preguntas (4 por nivel)",
+        "🎯" to "4 tipos de ejercicios: Vocabulario, Gramática, Audio, Lectura",
+        "⚡" to "Necesitas 3 de 4 respuestas correctas para avanzar",
+        "⚠️" to "Este test puede ser largo. Tómate tu tiempo."
     )
 )
 
@@ -214,7 +218,6 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
 
                 currentLevelQuestions.clear()
 
-                // Load 1 question of each type (4 total per level)
                 val questionTypes = FlujoQuestionType.values().toList().shuffled()
 
                 questionTypes.forEach { type ->
@@ -244,7 +247,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                         answeredInLevel = 0,
                         correctInLevel = 0,
                         incorrectInLevel = 0,
-                        questionTypes = questionTypes
+                        questionTypes = questionTypes,
+                        vocabCorrectPairs = 0  // СБРОС
                     )
                 }
 
@@ -331,7 +335,6 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun loadQuestion(index: Int) {
         if (index >= currentLevelQuestions.size) {
-            // Level complete
             terminarNivel(_uiState.value.correctInLevel)
             return
         }
@@ -373,7 +376,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                             selectedRussian = null,
                             answers = emptyList(),
                             dragDropWords = emptyList(),
-                            userDragDropAnswer = ""
+                            userDragDropAnswer = "",
+                            vocabCorrectPairs = 0
                         )
                     }
                 }
@@ -394,7 +398,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                 },
                 dragDropWords = question.palabras?.shuffled() ?: emptyList(),
                 userDragDropAnswer = "",
-                selectedAnswer = null
+                selectedAnswer = null,
+                isProcessingAnswer = false
             )
         }
     }
@@ -414,7 +419,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                 isPlaying = false,
                 currentPosition = 0f,
                 dragDropWords = emptyList(),
-                userDragDropAnswer = ""
+                userDragDropAnswer = "",
+                isProcessingAnswer = false
             )
         }
 
@@ -434,12 +440,14 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                 },
                 selectedAnswer = null,
                 dragDropWords = emptyList(),
-                userDragDropAnswer = ""
+                userDragDropAnswer = "",
+                isProcessingAnswer = false
             )
         }
     }
 
     // ========== VOCABULARIO ==========
+    // Собираем пары, как только 5 правильных → автоматом дальше
 
     fun onSpanishCardClick(index: Int) {
         val card = _uiState.value.spanishCards.getOrNull(index) ?: return
@@ -501,6 +509,7 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
         val isCorrect = spanishCard.pairId == russianCard.pairId
 
         if (isCorrect) {
+            // ПРАВИЛЬНАЯ ПАРА
             _uiState.update { state ->
                 state.copy(
                     spanishCards = state.spanishCards.map {
@@ -509,28 +518,30 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                     russianCards = state.russianCards.map {
                         if (it.id == selectedRussianId) it.copy(state = FlujoCardState.SHOWING_SUCCESS) else it
                     },
-                    correctInLevel = state.correctInLevel + 1,
+                    vocabCorrectPairs = state.vocabCorrectPairs + 1,  // ← +1 к правильным парам
                     selectedSpanish = null,
                     selectedRussian = null
                 )
             }
 
-            viewModelScope.launch {
-                delay(400)
-                _uiState.update { state ->
-                    state.copy(
-                        spanishCards = state.spanishCards.map {
-                            if (it.id == selectedSpanishId) it.copy(state = FlujoCardState.MATCHED) else it
-                        },
-                        russianCards = state.russianCards.map {
-                            if (it.id == selectedRussianId) it.copy(state = FlujoCardState.MATCHED) else it
-                        }
-                    )
-                }
+            delay(400)
+
+            _uiState.update { state ->
+                state.copy(
+                    spanishCards = state.spanishCards.map {
+                        if (it.id == selectedSpanishId) it.copy(state = FlujoCardState.MATCHED) else it
+                    },
+                    russianCards = state.russianCards.map {
+                        if (it.id == selectedRussianId) it.copy(state = FlujoCardState.MATCHED) else it
+                    }
+                )
             }
 
+            // Проверяем: достигли порога или все собраны?
             checkVocabComplete()
+
         } else {
+            // НЕПРАВИЛЬНАЯ ПАРА
             _uiState.update { state ->
                 state.copy(
                     spanishCards = state.spanishCards.map {
@@ -538,8 +549,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                     },
                     russianCards = state.russianCards.map {
                         if (it.id == selectedRussianId) it.copy(state = FlujoCardState.INCORRECT) else it
-                    },
-                    incorrectInLevel = state.incorrectInLevel + 1
+                    }
+                    // НЕ УВЕЛИЧИВАЕМ incorrectInLevel!
                 )
             }
 
@@ -561,91 +572,105 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun checkVocabComplete() {
+        val correctPairs = _uiState.value.vocabCorrectPairs
+        val threshold = _uiState.value.vocabThreshold  // 5
+        val totalPairs = _uiState.value.vocabTotalPairs  // 8
+
+        // Проверяем: ВСЕ пары собраны (не завершаем при достижении порога)
         val allMatched = _uiState.value.spanishCards.all {
             it.state == FlujoCardState.MATCHED || it.state == FlujoCardState.SHOWING_SUCCESS
         }
 
         if (allMatched) {
-            delay(1500)
+            delay(1000)
+
+            // Оцениваем результат vocabulario
+            if (correctPairs >= threshold) {
+                // PASS (>=5 правильных)
+                _uiState.update {
+                    it.copy(correctInLevel = it.correctInLevel + 1)
+                }
+                Log.d("FlujoVM", "Vocabulario PASSED: $correctPairs/$totalPairs pairs")
+            } else {
+                // FAIL (<5 правильных)
+                _uiState.update {
+                    it.copy(incorrectInLevel = it.incorrectInLevel + 1)
+                }
+                Log.d("FlujoVM", "Vocabulario FAILED: $correctPairs/$totalPairs pairs")
+            }
+
             _uiState.update { it.copy(answeredInLevel = it.answeredInLevel + 1) }
             loadQuestion(_uiState.value.currentQuestionIndex + 1)
         }
     }
 
     // ========== GRAMMAR / AUDIO / LECTURA ==========
+    // одна попытка, сразу переход дальше
 
     fun onAnswerClick(index: Int) {
+        // Блокируем если уже обрабатываем ответ
+        if (_uiState.value.isProcessingAnswer) return
+
         val answer = _uiState.value.answers.getOrNull(index) ?: return
         if (answer.state == FlujoCardState.MATCHED) return
 
         viewModelScope.launch {
+            // Устанавливаем флаг блокировки
+            _uiState.update { it.copy(isProcessingAnswer = true) }
+
+            // Показываем выбор
             _uiState.update { state ->
                 state.copy(
                     answers = state.answers.map {
-                        when {
-                            it.state == FlujoCardState.INCORRECT -> it.copy(state = FlujoCardState.NORMAL)
-                            it.state == FlujoCardState.SELECTED -> it.copy(state = FlujoCardState.NORMAL)
-                            it.id == answer.id -> it.copy(state = FlujoCardState.SELECTED)
-                            else -> it
-                        }
+                        if (it.id == answer.id) it.copy(state = FlujoCardState.SELECTED) else it
                     },
                     selectedAnswer = answer.id
                 )
             }
 
-            checkAnswer()
-        }
-    }
+            delay(300)
 
-    private suspend fun checkAnswer() {
-        val selectedId = _uiState.value.selectedAnswer ?: return
-        val answer = _uiState.value.answers.find { it.id == selectedId } ?: return
-
-        if (answer.isCorrect) {
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = FlujoCardState.SHOWING_SUCCESS) else it
-                    },
-                    correctInLevel = state.correctInLevel + 1,
-                    selectedAnswer = null
-                )
-            }
-
-            viewModelScope.launch {
-                delay(400)
+            // Проверяем ответ
+            if (answer.isCorrect) {
+                // ПРАВИЛЬНО
                 _uiState.update { state ->
                     state.copy(
                         answers = state.answers.map {
-                            if (it.id == selectedId) it.copy(state = FlujoCardState.MATCHED) else it
+                            if (it.id == answer.id) it.copy(state = FlujoCardState.SHOWING_SUCCESS) else it
+                        },
+                        correctInLevel = state.correctInLevel + 1
+                    )
+                }
+
+                delay(800)
+
+                _uiState.update { state ->
+                    state.copy(
+                        answers = state.answers.map {
+                            if (it.id == answer.id) it.copy(state = FlujoCardState.MATCHED) else it
                         }
                     )
                 }
+            } else {
+                // НЕПРАВИЛЬНО
+                _uiState.update { state ->
+                    state.copy(
+                        answers = state.answers.map {
+                            if (it.id == answer.id) it.copy(state = FlujoCardState.INCORRECT) else it
+                        },
+                        incorrectInLevel = state.incorrectInLevel + 1
+                    )
+                }
+
+                delay(800)
             }
 
-            delay(1500)
+            // АВТОМАТИЧЕСКИЙ переход к следующему вопросу
             _uiState.update { it.copy(answeredInLevel = it.answeredInLevel + 1) }
             loadQuestion(_uiState.value.currentQuestionIndex + 1)
-        } else {
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = FlujoCardState.INCORRECT) else it
-                    },
-                    incorrectInLevel = state.incorrectInLevel + 1
-                )
-            }
 
-            delay(400)
-
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = FlujoCardState.NORMAL) else it
-                    },
-                    selectedAnswer = null
-                )
-            }
+            // Снимаем блокировку (хотя уже перешли к следующему вопросу)
+            _uiState.update { it.copy(isProcessingAnswer = false) }
         }
     }
 
@@ -669,6 +694,7 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
             val correctAnswer = question?.question?.respuestaCorrecta?.trim() ?: ""
             val isCorrect = userAnswer.equals(correctAnswer, ignoreCase = true)
 
+            // Обновляем счетчик
             _uiState.update {
                 it.copy(
                     correctInLevel = if (isCorrect) it.correctInLevel + 1 else it.correctInLevel,
@@ -678,6 +704,7 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             delay(1000)
+            // АВТОМАТИЧЕСКИЙ переход
             loadQuestion(_uiState.value.currentQuestionIndex + 1)
         }
     }
@@ -784,7 +811,7 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
     private fun terminarNivel(respuestasCorrectas: Int) {
         val nivel = _uiState.value.currentLevel
         val total = _uiState.value.answeredInLevel
-        val aprobado = respuestasCorrectas >= 3 // Need 3/4 to pass
+        val aprobado = respuestasCorrectas >= 3
 
         val result = FlujoLevelResult(
             nivel = nivel,
@@ -814,20 +841,13 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
             _uiState.update { it.copy(showLevelCompleteDialog = false) }
             cargarPreguntasNivel(nextLevel)
         } else {
-            // Last level completed
             stopTest()
         }
     }
 
     fun continueDespiteFailure() {
-        val currentIndex = levelSequence.indexOf(_uiState.value.currentLevel)
-        if (currentIndex < levelSequence.size - 1) {
-            val nextLevel = levelSequence[currentIndex + 1]
-            _uiState.update { it.copy(showStopDialog = false) }
-            cargarPreguntasNivel(nextLevel)
-        } else {
-            stopTest()
-        }
+        // При провале уровня - всегда завершаем тест
+        stopTest()
     }
 
     fun stopTest() {
@@ -851,7 +871,6 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
         val totalQuestions = _uiState.value.levelResults.values.sumOf { it.total }
         val totalCorrect = _uiState.value.levelResults.values.sumOf { it.correctas }
 
-        // Manual JSON building (no Gson dependency)
         val levelResultsJson = buildString {
             append("{")
             _uiState.value.levelResults.entries.forEachIndexed { index, entry ->
