@@ -545,6 +545,13 @@ private fun WordCardItem(
 
     val isClickable = card.state != CardState.MATCHED && card.state != CardState.SHOWING_SUCCESS
 
+    val wordText = if (card.isSpanish) card.spanish else card.russian
+    val adaptiveFontSize = when {
+        wordText.length > 12 -> dimensions.vocabularioWordFontSize * 0.65f
+        wordText.length > 8  -> dimensions.vocabularioWordFontSize * 0.80f
+        else                 -> dimensions.vocabularioWordFontSize
+    }
+
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -565,12 +572,12 @@ private fun WordCardItem(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (card.isSpanish) card.spanish else card.russian,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            text = wordText,
+            fontSize = adaptiveFontSize.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
     }
 }

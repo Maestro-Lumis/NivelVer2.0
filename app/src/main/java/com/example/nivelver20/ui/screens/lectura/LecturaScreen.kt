@@ -188,7 +188,6 @@ fun LecturaScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFf2edd0),
                         textAlign = TextAlign.Center,
-                        lineHeight = dimensions.lineHeightForAudAndLect,
                         modifier = Modifier.fillMaxWidth()
                     )
 
@@ -414,7 +413,7 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(

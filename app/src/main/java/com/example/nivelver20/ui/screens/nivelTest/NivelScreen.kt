@@ -349,6 +349,12 @@ private fun VocabCard(
 
     val isClickable = card.state != NivelCardState.MATCHED && card.state != NivelCardState.SHOWING_SUCCESS
 
+    val wordText = if (card.isSpanish) card.spanish else card.russian
+    val adaptiveFontSize = when {
+        wordText.length > 12 -> dimensions.vocabularioWordFontSize * 0.65f
+        wordText.length > 8  -> dimensions.vocabularioWordFontSize * 0.80f
+        else                 -> dimensions.vocabularioWordFontSize
+    }
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -362,12 +368,12 @@ private fun VocabCard(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (card.isSpanish) card.spanish else card.russian,
-            fontSize = dimensions.vocabularioWordFontSize.sp,
+            text = wordText,
+            fontSize = adaptiveFontSize.sp,
             fontWeight = FontWeight.Bold,
             color = textColor,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp)
+            modifier = Modifier.padding(horizontal = 4.dp)
         )
     }
 }
@@ -870,11 +876,10 @@ private fun LecturaContent(
 
         Text(
             text = uiState.currentQuestion?.questionText ?: "",
-            fontSize = dimensions.audioQuestion.sp,
+            fontSize = dimensions.lecturaAnswerFontSize.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFFf2edd0),
             textAlign = TextAlign.Center,
-            lineHeight = dimensions.lineHeightForAudAndLect,
             modifier = Modifier.fillMaxWidth()
         )
 
@@ -952,7 +957,7 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -962,7 +967,7 @@ private fun AnswerItem(
             color = textColor,
             textAlign = TextAlign.Center,
             style = androidx.compose.ui.text.TextStyle(
-                fontSize = dimensions.audioWordFontSize.sp,
+                fontSize = dimensions.lecturaAnswerFontSize.sp,
                 lineHeight = (dimensions.lecturaAnswerFontSize * 1.2f).sp,
                 platformStyle = androidx.compose.ui.text.PlatformTextStyle(
                     includeFontPadding = false
