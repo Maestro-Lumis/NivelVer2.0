@@ -67,6 +67,22 @@ class SessionManager private constructor(context: Context) {
         return getCurrentUsername()
     }
 
+    // Префикс ключей результатов — чтобы данные не смешивались между пользователями
+    // на одном устройстве. Сессия (is_logged_in / current_username) остаётся глобальной.
+    private fun scopedKey(base: String): String {
+        val user = _currentUsername.value ?: "guest"
+        return "${user}::$base"
+    }
+
+    // Перечитать все результаты из-под текущего пользователя (после login/logout)
+    private fun reloadResults() {
+        _vocabularioResult.value = loadVocabularioResult()
+        _lecturaResult.value = loadLecturaResult()
+        _audioResult.value = loadAudioResult()
+        _grammarResult.value = loadGrammarResult()
+        _nivelResult.value = loadNivelResult()
+    }
+
     // Войти в систему
     fun login(username: String) {
         prefs.edit().apply {
@@ -76,6 +92,7 @@ class SessionManager private constructor(context: Context) {
         }
         _isLoggedIn.value = true
         _currentUsername.value = username
+        reloadResults()
         Log.d("SessionManager", "User logged in: $username")
     }
 
@@ -88,6 +105,7 @@ class SessionManager private constructor(context: Context) {
         }
         _isLoggedIn.value = false
         _currentUsername.value = null
+        reloadResults()
         Log.d("SessionManager", "User logged out")
     }
 
@@ -95,17 +113,17 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadVocabularioResult(): TestResult {
         return TestResult(
-            nivel = prefs.getString("vocabulario_nivel", "A1") ?: "A1",
-            correctCount = prefs.getInt("vocabulario_correct", 0),
-            incorrectCount = prefs.getInt("vocabulario_incorrect", 0)
+            nivel = prefs.getString(scopedKey("vocabulario_nivel"), "A1") ?: "A1",
+            correctCount = prefs.getInt(scopedKey("vocabulario_correct"), 0),
+            incorrectCount = prefs.getInt(scopedKey("vocabulario_incorrect"), 0)
         )
     }
 
     fun saveVocabularioResult(nivel: String, correctCount: Int, incorrectCount: Int) {
         prefs.edit().apply {
-            putString("vocabulario_nivel", nivel)
-            putInt("vocabulario_correct", correctCount)
-            putInt("vocabulario_incorrect", incorrectCount)
+            putString(scopedKey("vocabulario_nivel"), nivel)
+            putInt(scopedKey("vocabulario_correct"), correctCount)
+            putInt(scopedKey("vocabulario_incorrect"), incorrectCount)
             apply()
         }
 
@@ -117,17 +135,17 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadLecturaResult(): TestResult {
         return TestResult(
-            nivel = prefs.getString("lectura_nivel", "A1") ?: "A1",
-            correctCount = prefs.getInt("lectura_correct", 0),
-            incorrectCount = prefs.getInt("lectura_incorrect", 0)
+            nivel = prefs.getString(scopedKey("lectura_nivel"), "A1") ?: "A1",
+            correctCount = prefs.getInt(scopedKey("lectura_correct"), 0),
+            incorrectCount = prefs.getInt(scopedKey("lectura_incorrect"), 0)
         )
     }
 
     fun saveLecturaResult(nivel: String, correctCount: Int, incorrectCount: Int) {
         prefs.edit().apply {
-            putString("lectura_nivel", nivel)
-            putInt("lectura_correct", correctCount)
-            putInt("lectura_incorrect", incorrectCount)
+            putString(scopedKey("lectura_nivel"), nivel)
+            putInt(scopedKey("lectura_correct"), correctCount)
+            putInt(scopedKey("lectura_incorrect"), incorrectCount)
             apply()
         }
 
@@ -139,17 +157,17 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadAudioResult(): TestResult {
         return TestResult(
-            nivel = prefs.getString("audio_nivel", "A1") ?: "A1",
-            correctCount = prefs.getInt("audio_correct", 0),
-            incorrectCount = prefs.getInt("audio_incorrect", 0)
+            nivel = prefs.getString(scopedKey("audio_nivel"), "A1") ?: "A1",
+            correctCount = prefs.getInt(scopedKey("audio_correct"), 0),
+            incorrectCount = prefs.getInt(scopedKey("audio_incorrect"), 0)
         )
     }
 
     fun saveAudioResult(nivel: String, correctCount: Int, incorrectCount: Int) {
         prefs.edit().apply {
-            putString("audio_nivel", nivel)
-            putInt("audio_correct", correctCount)
-            putInt("audio_incorrect", incorrectCount)
+            putString(scopedKey("audio_nivel"), nivel)
+            putInt(scopedKey("audio_correct"), correctCount)
+            putInt(scopedKey("audio_incorrect"), incorrectCount)
             apply()
         }
 
@@ -161,17 +179,17 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadGrammarResult(): TestResult {
         return TestResult(
-            nivel = prefs.getString("grammar_nivel", "A1") ?: "A1",
-            correctCount = prefs.getInt("grammar_correct", 0),
-            incorrectCount = prefs.getInt("grammar_incorrect", 0)
+            nivel = prefs.getString(scopedKey("grammar_nivel"), "A1") ?: "A1",
+            correctCount = prefs.getInt(scopedKey("grammar_correct"), 0),
+            incorrectCount = prefs.getInt(scopedKey("grammar_incorrect"), 0)
         )
     }
 
     fun saveGrammarResult(nivel: String, correctCount: Int, incorrectCount: Int) {
         prefs.edit().apply {
-            putString("grammar_nivel", nivel)
-            putInt("grammar_correct", correctCount)
-            putInt("grammar_incorrect", incorrectCount)
+            putString(scopedKey("grammar_nivel"), nivel)
+            putInt(scopedKey("grammar_correct"), correctCount)
+            putInt(scopedKey("grammar_incorrect"), incorrectCount)
             apply()
         }
 
@@ -183,17 +201,17 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadNivelResult(): TestResult {
         return TestResult(
-            nivel = prefs.getString("nivel_test_nivel", "A1") ?: "A1",
-            correctCount = prefs.getInt("nivel_test_correct", 0),
-            incorrectCount = prefs.getInt("nivel_test_incorrect", 0)
+            nivel = prefs.getString(scopedKey("nivel_test_nivel"), "A1") ?: "A1",
+            correctCount = prefs.getInt(scopedKey("nivel_test_correct"), 0),
+            incorrectCount = prefs.getInt(scopedKey("nivel_test_incorrect"), 0)
         )
     }
 
     fun saveNivelResult(nivel: String, correctCount: Int, incorrectCount: Int) {
         prefs.edit().apply {
-            putString("nivel_test_nivel", nivel)
-            putInt("nivel_test_correct", correctCount)
-            putInt("nivel_test_incorrect", incorrectCount)
+            putString(scopedKey("nivel_test_nivel"), nivel)
+            putInt(scopedKey("nivel_test_correct"), correctCount)
+            putInt(scopedKey("nivel_test_incorrect"), incorrectCount)
             apply()
         }
 
@@ -211,10 +229,10 @@ class SessionManager private constructor(context: Context) {
 
     private fun loadFlujoResult(): FlujoResult {
         return FlujoResult(
-            finalLevel = prefs.getString("flujo_final_level", "A1") ?: "A1",
-            totalQuestions = prefs.getInt("flujo_total_questions", 0),
-            totalCorrect = prefs.getInt("flujo_total_correct", 0),
-            levelResults = prefs.getString("flujo_level_results", "{}") ?: "{}"
+            finalLevel = prefs.getString(scopedKey("flujo_final_level"), "A1") ?: "A1",
+            totalQuestions = prefs.getInt(scopedKey("flujo_total_questions"), 0),
+            totalCorrect = prefs.getInt(scopedKey("flujo_total_correct"), 0),
+            levelResults = prefs.getString(scopedKey("flujo_level_results"), "{}") ?: "{}"
         )
     }
 
@@ -225,10 +243,10 @@ class SessionManager private constructor(context: Context) {
         levelResults: String // JSON string
     ) {
         prefs.edit().apply {
-            putString("flujo_final_level", finalLevel)
-            putInt("flujo_total_questions", totalQuestions)
-            putInt("flujo_total_correct", totalCorrect)
-            putString("flujo_level_results", levelResults)
+            putString(scopedKey("flujo_final_level"), finalLevel)
+            putInt(scopedKey("flujo_total_questions"), totalQuestions)
+            putInt(scopedKey("flujo_total_correct"), totalCorrect)
+            putString(scopedKey("flujo_level_results"), levelResults)
             apply()
         }
 

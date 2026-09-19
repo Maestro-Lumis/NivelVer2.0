@@ -205,7 +205,6 @@ fun FlujoScreen(
             ) {
                 when (uiState.currentQuestion) {
                     is FlujoQuestion.Vocabulario -> VocabContent(
-                        word = (uiState.currentQuestion as FlujoQuestion.Vocabulario).word,
                         spanishCards = uiState.spanishCards,
                         russianCards = uiState.russianCards,
                         onSpanishClick = { viewModel.onSpanishCardClick(it) },
@@ -234,6 +233,7 @@ fun FlujoScreen(
                         currentPosition = uiState.currentPosition,
                         currentTimeText = uiState.currentTimeText,
                         durationText = uiState.durationText,
+                        audioError = uiState.audioError,
                         onAnswerClick = { viewModel.onAnswerClick(it) },
                         onPlayPause = { viewModel.togglePlayPause() },
                         onSliderChange = { viewModel.onSliderValueChange(it) },
@@ -284,7 +284,6 @@ fun FlujoScreen(
 // ========== VOCABULARIO CONTENT ==========
 @Composable
 private fun VocabContent(
-    word: FlujoWord,
     spanishCards: List<FlujoWordCard>,
     russianCards: List<FlujoWordCard>,
     onSpanishClick: (Int) -> Unit,
@@ -823,6 +822,7 @@ private fun AudioContent(
     currentPosition: Float,
     currentTimeText: String,
     durationText: String,
+    audioError: String?,
     onAnswerClick: (Int) -> Unit,
     onPlayPause: () -> Unit,
     onSliderChange: (Float) -> Unit,
@@ -869,6 +869,17 @@ private fun AudioContent(
                     modifier = Modifier.size(dimensions.audioVolumeUp).clickable { onPlayPause() },
                     tint = Color(0xFFf2edd0)
                 )
+
+                if (audioError != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = audioError,
+                        fontSize = (dimensions.buttonFontSize * 0.8f).sp,
+                        color = Color(0xFFff6b6b),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 

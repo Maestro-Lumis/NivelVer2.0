@@ -102,7 +102,7 @@ data class FlujoAnswerItem(
 
 // Sealed class for different question types
 sealed class FlujoQuestion {
-    data class Vocabulario(val word: FlujoWord) : FlujoQuestion()
+    data class Vocabulario(val words: List<FlujoWord>) : FlujoQuestion()
     data class Grammar(val question: FlujoGrammarQuestion) : FlujoQuestion()
     data class Audio(val question: FlujoAudioQuestion) : FlujoQuestion()
     data class Lectura(val question: FlujoLecturaQuestion) : FlujoQuestion()
@@ -155,6 +155,7 @@ data class FlujoState(
     val currentPosition: Float = 0f,
     val currentTimeText: String = "0:00",
     val durationText: String = "0:00",
+    val audioError: String? = null,
 
     // Exit dialog
     val showExitDialog: Boolean = false,
@@ -268,13 +269,12 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
         if (result.isSuccess) {
             val words = result.getOrNull() ?: emptyList()
             if (words.size >= 8) {
-                val selectedWords = words.shuffled().take(8)
-                val word = FlujoWord(
-                    espanol = selectedWords[0].es,
-                    ruso = selectedWords[0].ru,
-                    nivel = nivel
-                )
-                currentLevelQuestions.add(FlujoQuestion.Vocabulario(word))
+                // Выбираем 8 пар один раз и сохраняем их в самом вопросе —
+                // карточки в UI строятся именно из этого набора (без повторного запроса).
+                val selectedWords = words.shuffled().take(8).map {
+                    FlujoWord(espanol = it.es, ruso = it.ru, nivel = nivel)
+                }
+                currentLevelQuestions.add(FlujoQuestion.Vocabulario(selectedWords))
             }
         }
     }
@@ -343,45 +343,36 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
         releaseMediaPlayer()
 
         when (question) {
-            is FlujoQuestion.Vocabulario -> loadVocabUI(question.word, index)
+            is FlujoQuestion.Vocabulario -> loadVocabUI(question.words, index)
             is FlujoQuestion.Grammar -> loadGrammarUI(question.question, index)
             is FlujoQuestion.Audio -> loadAudioUI(question.question, index)
             is FlujoQuestion.Lectura -> loadLecturaUI(question.question, index)
         }
     }
 
-    private fun loadVocabUI(word: FlujoWord, index: Int) {
-        viewModelScope.launch {
-            val result = repository.getWordsByNivel(word.nivel)
-            if (result.isSuccess) {
-                val words = result.getOrNull() ?: emptyList()
-                if (words.size >= 8) {
-                    val selectedWords = words.shuffled().take(8)
+    private fun loadVocabUI(words: List<FlujoWord>, index: Int) {
+        // Никакого повторного запроса — строим карточки из уже выбранных 8 пар.
+        val spanishCards = words.mapIndexed { idx, w ->
+            FlujoWordCard(idx, idx, w.espanol, w.ruso, true, FlujoCardState.NORMAL)
+        }
 
-                    val spanishCards = selectedWords.mapIndexed { idx, w ->
-                        FlujoWordCard(idx, idx, w.es, w.ru, true, FlujoCardState.NORMAL)
-                    }
+        val russianCards = words.mapIndexed { idx, w ->
+            FlujoWordCard(idx + 100, idx, w.espanol, w.ruso, false, FlujoCardState.NORMAL)
+        }.shuffled()
 
-                    val russianCards = selectedWords.mapIndexed { idx, w ->
-                        FlujoWordCard(idx + 100, idx, w.es, w.ru, false, FlujoCardState.NORMAL)
-                    }.shuffled()
-
-                    _uiState.update {
-                        it.copy(
-                            currentQuestionIndex = index,
-                            currentQuestion = FlujoQuestion.Vocabulario(word),
-                            spanishCards = spanishCards,
-                            russianCards = russianCards,
-                            selectedSpanish = null,
-                            selectedRussian = null,
-                            answers = emptyList(),
-                            dragDropWords = emptyList(),
-                            userDragDropAnswer = "",
-                            vocabCorrectPairs = 0
-                        )
-                    }
-                }
-            }
+        _uiState.update {
+            it.copy(
+                currentQuestionIndex = index,
+                currentQuestion = FlujoQuestion.Vocabulario(words),
+                spanishCards = spanishCards,
+                russianCards = russianCards,
+                selectedSpanish = null,
+                selectedRussian = null,
+                answers = emptyList(),
+                dragDropWords = emptyList(),
+                userDragDropAnswer = "",
+                vocabCorrectPairs = 0
+            )
         }
     }
 
@@ -420,7 +411,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                 currentPosition = 0f,
                 dragDropWords = emptyList(),
                 userDragDropAnswer = "",
-                isProcessingAnswer = false
+                isProcessingAnswer = false,
+                audioError = null
             )
         }
 
@@ -747,6 +739,11 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun prepareMediaPlayer(audioUrl: String) {
+        if (audioUrl.isBlank()) {
+            Log.e("FlujoVM", "Audio URL is empty")
+            _uiState.update { it.copy(audioError = "Audio no disponible") }
+            return
+        }
         try {
             mediaPlayer = android.media.MediaPlayer().apply {
                 setDataSource(audioUrl)
@@ -755,7 +752,8 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(
                             durationText = formatTime(player.duration),
                             currentTimeText = "0:00",
-                            currentPosition = 0f
+                            currentPosition = 0f,
+                            audioError = null
                         )
                     }
                 }
@@ -765,13 +763,21 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
                         it.copy(isPlaying = false, currentPosition = 1f, currentTimeText = it.durationText)
                     }
                 }
-                setOnErrorListener { _, _, _ ->
-                    _uiState.update { it.copy(isPlaying = false) }
+                setOnErrorListener { _, what, extra ->
+                    Log.e("FlujoVM", "MediaPlayer error: what=$what extra=$extra url=$audioUrl")
+                    _uiState.update {
+                        it.copy(isPlaying = false, audioError = "No se pudo reproducir el audio")
+                    }
                     true
                 }
                 prepareAsync()
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            // Частая причина: http-ссылка блокируется как cleartext (Android 9+),
+            // либо некорректный URL. Раньше ошибка молча проглатывалась.
+            Log.e("FlujoVM", "prepareMediaPlayer failed for url=$audioUrl: ${e.message}", e)
+            _uiState.update { it.copy(isPlaying = false, audioError = "No se pudo cargar el audio") }
+        }
     }
 
     private fun startProgressUpdates() {
