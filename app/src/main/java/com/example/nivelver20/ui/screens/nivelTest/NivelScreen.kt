@@ -267,7 +267,8 @@ private fun VocabContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(dimensions.vocabularioBlockSpacing))
+        // Увеличенный зазор между блоком испанских и блоком русских слов.
+        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing * 2.5f))
 
         Column(
             modifier = Modifier
@@ -337,14 +338,14 @@ private fun VocabCard(
     }
 
     val backgroundColor = when (card.state) {
-        NivelCardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        NivelCardState.MATCHED -> Color(0xFFCCCCCC)
+        NivelCardState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        NivelCardState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFf2edd0)
     }
 
     val textColor = when (card.state) {
-        NivelCardState.SHOWING_SUCCESS -> Color.Gray
-        NivelCardState.MATCHED -> Color.Gray
+        NivelCardState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        NivelCardState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 
@@ -928,14 +929,14 @@ private fun AnswerItem(
     }
 
     val backgroundColor = when (answer.state) {
-        NivelCardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        NivelCardState.MATCHED -> Color(0xFFCCCCCC)
+        NivelCardState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        NivelCardState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFF5F5DC)
     }
 
     val textColor = when (answer.state) {
-        NivelCardState.SHOWING_SUCCESS -> Color.Gray
-        NivelCardState.MATCHED -> Color.Gray
+        NivelCardState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        NivelCardState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 

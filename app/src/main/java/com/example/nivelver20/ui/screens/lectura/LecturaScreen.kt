@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -17,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -157,25 +160,50 @@ fun LecturaScreen(
 
                     Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
 
+                    val lecturaScroll = rememberScrollState()
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f)
-                            .background(
-                                color = Color(0x40FFFFFF),
-                                shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
-                            )
-                            .padding(dimensions.vocabularioPadding)
-                            .verticalScroll(rememberScrollState())
+                            .clip(RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize()
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color = Color(0x40FFFFFF))
+                                .padding(dimensions.vocabularioPadding)
+                                .verticalScroll(lecturaScroll)
                         ) {
                             Text(
                                 text = uiState.text,
                                 fontSize = dimensions.vocabularioWordFontSize.sp,
                                 color = Color(0xFFf2edd0),
                                 modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
+                        // Индикатор прокрутки: если снизу ещё есть текст —
+                        // плавное затемнение + стрелка вниз (иначе не видно, что можно скроллить).
+                        if (lecturaScroll.canScrollForward) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .fillMaxWidth()
+                                    .height(40.dp)
+                                    .background(
+                                        brush = Brush.verticalGradient(
+                                            colors = listOf(Color.Transparent, Color(0x99003D5B))
+                                        )
+                                    )
+                            )
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Desplázate para leer más",
+                                tint = Color(0xFFf2edd0),
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = 2.dp)
+                                    .size(24.dp)
                             )
                         }
                     }

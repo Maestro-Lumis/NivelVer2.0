@@ -337,7 +337,8 @@ private fun VocabContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(dimensions.vocabularioBlockSpacing))
+        // Увеличенный зазор между блоком испанских и блоком русских слов.
+        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing * 2.5f))
 
         // Russian cards (4 rows × 2 columns)
         Column(
@@ -436,14 +437,14 @@ private fun VocabCard(
     }
 
     val backgroundColor = when (card.state) {
-        FlujoCardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        FlujoCardState.MATCHED -> Color(0xFFCCCCCC)
+        FlujoCardState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        FlujoCardState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFf2edd0)
     }
 
     val textColor = when (card.state) {
-        FlujoCardState.SHOWING_SUCCESS -> Color.Gray
-        FlujoCardState.MATCHED -> Color.Gray
+        FlujoCardState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        FlujoCardState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 
@@ -1074,14 +1075,14 @@ private fun AnswerItem(
     }
 
     val backgroundColor = when (answer.state) {
-        FlujoCardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        FlujoCardState.MATCHED -> Color(0xFFCCCCCC)
+        FlujoCardState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        FlujoCardState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFF5F5DC)
     }
 
     val textColor = when (answer.state) {
-        FlujoCardState.SHOWING_SUCCESS -> Color.Gray
-        FlujoCardState.MATCHED -> Color.Gray
+        FlujoCardState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        FlujoCardState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 

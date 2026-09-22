@@ -259,7 +259,9 @@ fun VocabularioScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(dimensions.vocabularioBlockSpacing))
+                    // Увеличенный зазор между блоком испанских и блоком русских слов
+                    // (относительно card-spacing, чтобы разделение было заметно на всех экранах).
+                    Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing * 2.5f))
 
                     // БЛОК РУССКИХ СЛОВ (4 ряда × 2 колонки = 8 слов)
                     Column(
@@ -533,14 +535,14 @@ private fun WordCardItem(
     }
 
     val backgroundColor = when (card.state) {
-        CardState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        CardState.MATCHED -> Color(0xFFCCCCCC)
+        CardState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        CardState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFf2edd0)
     }
 
     val textColor = when (card.state) {
-        CardState.SHOWING_SUCCESS -> Color.Gray
-        CardState.MATCHED -> Color.Gray
+        CardState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        CardState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 
