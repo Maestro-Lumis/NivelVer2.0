@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
+import com.example.nivelver20.ui.components.AutoResizeText
 import com.example.nivelver20.data.repository.FirestoreRepository
 import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
@@ -350,11 +351,6 @@ private fun VocabCard(
     val isClickable = card.state != NivelCardState.MATCHED && card.state != NivelCardState.SHOWING_SUCCESS
 
     val wordText = if (card.isSpanish) card.spanish else card.russian
-    val adaptiveFontSize = when {
-        wordText.length > 12 -> dimensions.vocabularioWordFontSize * 0.65f
-        wordText.length > 8  -> dimensions.vocabularioWordFontSize * 0.80f
-        else                 -> dimensions.vocabularioWordFontSize
-    }
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -367,12 +363,11 @@ private fun VocabCard(
             .clickable(enabled = isClickable) { onClick() },
         contentAlignment = Alignment.Center
     ) {
-        Text(
+        AutoResizeText(
             text = wordText,
-            fontSize = adaptiveFontSize.sp,
-            fontWeight = FontWeight.Bold,
+            maxFontSizeSp = dimensions.vocabularioWordFontSize,
+            minFontSizeSp = dimensions.vocabularioWordFontSize * 0.5f,
             color = textColor,
-            textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 4.dp)
         )
     }
