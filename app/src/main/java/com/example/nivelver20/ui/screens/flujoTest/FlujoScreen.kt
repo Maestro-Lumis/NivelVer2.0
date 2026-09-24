@@ -337,8 +337,9 @@ private fun VocabContent(
             }
         }
 
-        // Увеличенный зазор между блоком испанских и блоком русских слов.
-        Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing * 2.5f))
+        // Фиксированный зазор между блоком испанских и блоком русских слов —
+        // одинаковый на всех экранах.
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Russian cards (4 rows × 2 columns)
         Column(
