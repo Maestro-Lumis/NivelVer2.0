@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
 import com.example.nivelver20.ui.components.AutoResizeText
+import com.example.nivelver20.ui.components.LoadingIndicator
 import com.example.nivelver20.data.repository.FirestoreRepository
 import com.example.nivelver20.data.session.SessionManager
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
@@ -72,10 +74,7 @@ fun NivelScreen(
         contentAlignment = Alignment.Center
     ) {
         if (uiState.isLoading) {
-            CircularProgressIndicator(
-                color = Color(0xFFa3b944),
-                modifier = Modifier.size(48.dp)
-            )
+            LoadingIndicator()
         }
 
         if (uiState.errorMessage != null) {
@@ -853,20 +852,50 @@ private fun LecturaContent(
 
         Spacer(modifier = Modifier.height(dimensions.vocabularioPadingH))
 
+        val lecturaScroll = rememberScrollState()
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .background(Color(0x40FFFFFF), RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
-                .padding(dimensions.vocabularioPadding)
-                .verticalScroll(rememberScrollState())
+                .clip(RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
         ) {
-            Text(
-                text = uiState.currentQuestion?.lecturaText ?: "",
-                fontSize = dimensions.vocabularioWordFontSize.sp,
-                color = Color(0xFFf2edd0),
-                modifier = Modifier.fillMaxWidth()
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0x40FFFFFF))
+                    .padding(dimensions.vocabularioPadding)
+                    .verticalScroll(lecturaScroll)
+            ) {
+                Text(
+                    text = uiState.currentQuestion?.lecturaText ?: "",
+                    fontSize = dimensions.vocabularioWordFontSize.sp,
+                    color = Color(0xFFf2edd0),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+            // Индикатор прокрутки: снизу есть ещё текст.
+            if (lecturaScroll.canScrollForward) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(40.dp)
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color(0x99003D5B))
+                            )
+                        )
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Desplázate para leer más",
+                    tint = Color(0xFFf2edd0),
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 2.dp)
+                        .size(24.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(dimensions.vocabularioCardSpacing))

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.nivelver20.R
 import com.example.nivelver20.ui.components.AutoResizeText
+import com.example.nivelver20.ui.components.LoadingIndicator
 import com.example.nivelver20.ui.theme.rememberAdaptiveDimensions
 import androidx.activity.compose.BackHandler
 
@@ -74,10 +75,7 @@ fun VocabularioScreen(
     ) {
         // Показываем индикатор загрузки
         if (uiState.isLoading) {
-            CircularProgressIndicator(
-                color = Color(0xFFa3b944),
-                modifier = Modifier.size(48.dp)
-            )
+            LoadingIndicator()
         }
 
         // Показываем ошибку
