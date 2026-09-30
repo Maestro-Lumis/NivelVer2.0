@@ -169,6 +169,7 @@ fun AppNavigation(
                 val lecturaResult by sessionManager.lecturaResult.collectAsState()
                 val audioResult by sessionManager.audioResult.collectAsState()
                 val grammarResult by sessionManager.grammarResult.collectAsState()
+                val nivelResult by sessionManager.nivelResult.collectAsState()
 
                 val currentUsername = sessionManager.getCurrentUser()
                 val userNivel = remember { androidx.compose.runtime.mutableStateOf("A1") }
@@ -188,10 +189,12 @@ fun AppNavigation(
                 PerfilScreen(
                     nivel = userNivel.value,
                     onNavigateToNivel = {
-                        navController.navigate(Routes.NivelSelection.route + "?destination=nivel")
+                        navController.navigate(
+                            "${Routes.NivelResults.route}/${nivelResult.nivel}/${nivelResult.correctCount}/${nivelResult.incorrectCount}"
+                        )
                     },
                     onNavigateToFlujo = {
-                        navController.navigate(Routes.Flujo.route + "/A1")
+                        navController.navigate(Routes.FlujoResults.route)
                     },
                     onNavigateToVocabulario = {
                         navController.navigate(

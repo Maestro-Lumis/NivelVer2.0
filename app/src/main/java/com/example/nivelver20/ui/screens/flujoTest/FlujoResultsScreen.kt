@@ -52,6 +52,7 @@ fun FlujoResultsScreen(
             painter = painterResource(id = R.drawable.espanol_logo),
             contentDescription = "Background",
             modifier = Modifier
+                .align(Alignment.Center)
                 .fillMaxWidth(0.8f)
                 .fillMaxHeight(0.7f),
             alpha = 0.15f,
