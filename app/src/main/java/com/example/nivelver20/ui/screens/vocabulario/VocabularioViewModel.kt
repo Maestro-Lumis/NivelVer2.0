@@ -34,7 +34,7 @@ data class WordCard(
 data class VocabularioUiState(
     val nivelLabel: String = "NIVEL",
     val nivel: String = "A1",
-    val userName: String = "NOMBRE",
+    val userName: String = "Invitado",
     val title: String = "VOCABULARIO",
     val spanishWords: List<WordCard> = emptyList(),
     val russianWords: List<WordCard> = emptyList(),

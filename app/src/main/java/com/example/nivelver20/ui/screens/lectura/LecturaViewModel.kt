@@ -38,7 +38,7 @@ data class AnswerItem(
 data class LecturaUiState(
     val nivelLabel: String = "NIVEL",
     val nivel: String = "A1",
-    val userName: String = "NOMBRE",
+    val userName: String = "Invitado",
     val title: String = "LECTURA",
     val text: String = "",
     val question: String = "",

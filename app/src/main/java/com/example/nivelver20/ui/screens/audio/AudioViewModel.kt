@@ -38,7 +38,7 @@ data class AudioAnswerItem(
 data class AudioUiState(
     val nivelLabel: String = "NIVEL",
     val nivel: String = "A1",
-    val userName: String = "NOMBRE",
+    val userName: String = "Invitado",
     val title: String = "AUDIO",
     val audioUrl: String = "",
     val question: String = "",

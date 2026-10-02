@@ -114,7 +114,7 @@ fun LecturaResultsScreen(
                                 Color(0xFF85edff)
                             )
                         ),
-                        alpha = 0.55f,
+                        alpha = 0.9f,
                         shape = RoundedCornerShape(dimensions.buttonCornerRadius)
                     )
             ) {

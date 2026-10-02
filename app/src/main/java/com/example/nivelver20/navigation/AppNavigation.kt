@@ -261,7 +261,7 @@ fun AppNavigation(
 
             VocabularioResultsScreen(
                 nivel = nivel,
-                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                userName = sessionManager.getCurrentUser() ?: "Invitado",
                 correctCount = correctCount,
                 incorrectCount = incorrectCount,
                 onNavigateToMain = {
@@ -315,7 +315,7 @@ fun AppNavigation(
 
             LecturaResultsScreen(
                 nivel = nivel,
-                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                userName = sessionManager.getCurrentUser() ?: "Invitado",
                 correctCount = correctCount,
                 incorrectCount = incorrectCount,
                 onNavigateToMain = {
@@ -369,7 +369,7 @@ fun AppNavigation(
 
             AudioResultsScreen(
                 nivel = nivel,
-                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                userName = sessionManager.getCurrentUser() ?: "Invitado",
                 correctCount = correctCount,
                 incorrectCount = incorrectCount,
                 onNavigateToMain = {
@@ -423,7 +423,7 @@ fun AppNavigation(
 
             GrammarResultsScreen(
                 nivel = nivel,
-                userName = sessionManager.getCurrentUser() ?: "NOMBRE",
+                userName = sessionManager.getCurrentUser() ?: "Invitado",
                 correctCount = correctCount,
                 incorrectCount = incorrectCount,
                 onNavigateToMain = {
@@ -517,7 +517,7 @@ fun AppNavigation(
                         navController.navigate(Routes.Login.route)
                     }
                 },
-                userName = sessionManager.getCurrentUser() ?: "NOMBRE"
+                userName = sessionManager.getCurrentUser() ?: "Invitado"
             )
         }
 

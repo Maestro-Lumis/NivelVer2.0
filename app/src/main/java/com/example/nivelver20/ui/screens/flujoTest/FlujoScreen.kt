@@ -38,7 +38,7 @@ fun FlujoScreen(
     viewModel: FlujoViewModel,
     onNavigateToTest: () -> Unit = {},
     onNavigateToPerfil: () -> Unit = {},
-    userName: String = "NOMBRE"
+    userName: String = "Invitado"
 ) {
     val dimensions = rememberAdaptiveDimensions()
     val uiState by viewModel.uiState.collectAsState()

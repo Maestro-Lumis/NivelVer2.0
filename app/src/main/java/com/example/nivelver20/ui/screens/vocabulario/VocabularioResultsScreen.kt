@@ -121,7 +121,7 @@ fun VocabularioResultsScreen(
                                 Color(0xFFe0ca71)
                             )
                         ),
-                        alpha = 0.55f,
+                        alpha = 0.9f,
                         shape = RoundedCornerShape(dimensions.buttonCornerRadius)
                     )
             ) {

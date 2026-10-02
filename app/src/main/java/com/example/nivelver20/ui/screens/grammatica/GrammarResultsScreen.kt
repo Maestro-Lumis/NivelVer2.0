@@ -114,7 +114,7 @@ fun GrammarResultsScreen(
                                 Color(0xFF7ED957)
                             )
                         ),
-                        alpha = 0.55f,
+                        alpha = 0.9f,
                         shape = RoundedCornerShape(dimensions.buttonCornerRadius)
                     )
             ) {

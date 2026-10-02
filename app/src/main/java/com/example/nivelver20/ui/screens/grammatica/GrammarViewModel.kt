@@ -56,7 +56,7 @@ data class GrammarAnswerItem(
 data class GrammarUiState(
     val nivelLabel: String = "NIVEL",
     val nivel: String = "A1",
-    val userName: String = "NOMBRE",
+    val userName: String = "Invitado",
     val title: String = "GRAMÁTICA",
     val currentQuestion: GrammarQuestion? = null,
     val answers: List<GrammarAnswerItem> = emptyList(),

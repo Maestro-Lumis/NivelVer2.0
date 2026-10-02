@@ -75,7 +75,7 @@ data class NivelQuestion(
 
 data class NivelUiState(
     val nivel: String = "A1",
-    val userName: String = "NOMBRE",
+    val userName: String = "Invitado",
     val currentQuestionIndex: Int = 0,
     val totalQuestions: Int = 12,
     val currentQuestion: NivelQuestion? = null,
