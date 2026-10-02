@@ -259,7 +259,7 @@ fun AudioScreen(
 
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing/2)
+                        verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
                     ) {
                         uiState.answers.forEachIndexed { index, answer ->
                             AnswerItem(
@@ -462,7 +462,8 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
+            // Баланс: компактные кнопки, чтобы плееру/контенту было больше места.
+            .heightIn(min = dimensions.grammarAnswerMinHeight * 0.6f)
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)

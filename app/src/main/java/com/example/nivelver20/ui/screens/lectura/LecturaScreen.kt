@@ -221,7 +221,7 @@ fun LecturaScreen(
 
                     Column(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing/2)
+                        verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
                     ) {
                         uiState.answers.forEachIndexed { index, answer ->
                             AnswerItem(
@@ -424,7 +424,9 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
+            // Баланс: на Lectura кнопки компактнее (ниже, чем в Grammar),
+            // чтобы текстовый блок был больше.
+            .heightIn(min = dimensions.grammarAnswerMinHeight * 0.6f)
             .background(
                 color = backgroundColor,
                 shape = RoundedCornerShape(dimensions.vocabularioCardCornerRadius)
@@ -439,7 +441,7 @@ private fun AnswerItem(
                 } else Modifier
             )
             .clickable(enabled = isClickable) { onClick() }
-            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 4.dp),
+            .padding(horizontal = dimensions.vocabularioPadding / 2, vertical = 8.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(

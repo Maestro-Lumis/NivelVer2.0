@@ -797,10 +797,10 @@ private fun AudioContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
             uiState.answers.forEachIndexed { index, answer ->
-                AnswerItem(answer, { onAnswerClick(index) }, dimensions)
+                AnswerItem(answer, { onAnswerClick(index) }, dimensions, minHeight = dimensions.grammarAnswerMinHeight * 0.6f)
             }
         }
 
@@ -913,10 +913,10 @@ private fun LecturaContent(
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(dimensions.vocabularioCardSpacing / 2)
+            verticalArrangement = Arrangement.spacedBy(dimensions.grammarSpacingBetweenSections)
         ) {
             uiState.answers.forEachIndexed { index, answer ->
-                AnswerItem(answer, { onAnswerClick(index) }, dimensions)
+                AnswerItem(answer, { onAnswerClick(index) }, dimensions, minHeight = dimensions.grammarAnswerMinHeight * 0.6f)
             }
         }
 
@@ -948,7 +948,8 @@ private fun LecturaContent(
 private fun AnswerItem(
     answer: NivelAnswerItem,
     onClick: () -> Unit,
-    dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions
+    dimensions: com.example.nivelver20.ui.theme.AdaptiveDimensions,
+    minHeight: androidx.compose.ui.unit.Dp = dimensions.grammarAnswerMinHeight
 ) {
     val borderColor = when (answer.state) {
         NivelCardState.NORMAL -> Color.Transparent  // ← ПРАВИЛЬНЫЙ ENUM!
@@ -975,7 +976,7 @@ private fun AnswerItem(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .wrapContentHeight()
+            .heightIn(min = minHeight)
             .background(backgroundColor, RoundedCornerShape(dimensions.vocabularioCardCornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
