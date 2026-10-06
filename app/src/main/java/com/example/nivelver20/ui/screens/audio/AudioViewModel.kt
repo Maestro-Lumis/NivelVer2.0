@@ -213,7 +213,8 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
         val answer = _uiState.value.answers.getOrNull(index) ?: return
 
-        if (answer.state == AudioAnswerState.MATCHED) return
+        // Ответ уже обрабатывается или принят — повторный тап игнорируем (иначе засчитается дважды)
+        if (answer.state != AudioAnswerState.NORMAL) return
 
         if (!_uiState.value.isChecking) {
             checkingJob?.cancel()
@@ -268,7 +269,9 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                         if (it.id == selectedId) it.copy(state = AudioAnswerState.SHOWING_SUCCESS) else it
                     },
                     correctCount = state.correctCount + 1,
-                    selectedAnswer = null
+                    selectedAnswer = null,
+                    // Блокируем все ответы до загрузки следующего вопроса (loadNextQuestion сбрасывает флаг)
+                    isChecking = true
                 )
             }
 

@@ -408,14 +408,14 @@ private fun AnswerItem(
     }
 
     val backgroundColor = when (answer.state) {
-        AnswerState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        AnswerState.MATCHED -> Color(0xFFCCCCCC)
+        AnswerState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        AnswerState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFF5F5DC)
     }
 
     val textColor = when (answer.state) {
-        AnswerState.SHOWING_SUCCESS -> Color.Gray
-        AnswerState.MATCHED -> Color.Gray
+        AnswerState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        AnswerState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 

@@ -503,14 +503,14 @@ private fun AnswerItem(
     }
 
     val backgroundColor = when (answer.state) {
-        GrammarAnswerState.SHOWING_SUCCESS -> Color(0xFFCCCCCC)
-        GrammarAnswerState.MATCHED -> Color(0xFFCCCCCC)
+        GrammarAnswerState.SHOWING_SUCCESS -> Color(0xFFA5D6A7)
+        GrammarAnswerState.MATCHED -> Color(0xFFA5D6A7)
         else -> Color(0xFFF5F5DC)
     }
 
     val textColor = when (answer.state) {
-        GrammarAnswerState.SHOWING_SUCCESS -> Color.Gray
-        GrammarAnswerState.MATCHED -> Color.Gray
+        GrammarAnswerState.SHOWING_SUCCESS -> Color(0xFF1B5E20)
+        GrammarAnswerState.MATCHED -> Color(0xFF1B5E20)
         else -> Color(0xFF003D5B)
     }
 

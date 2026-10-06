@@ -321,6 +321,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                 selectedSpanish = null,
                 selectedRussian = null,
                 answers = emptyList(),
+                isChecking = false,
                 dragDropWords = emptyList(),
                 userDragDropAnswer = ""
             )
@@ -335,6 +336,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                 spanishCards = emptyList(),
                 russianCards = emptyList(),
                 answers = question.grammarOptions ?: emptyList(),
+                isChecking = false,
                 dragDropWords = question.grammarDragDropWords ?: emptyList(),
                 userDragDropAnswer = "",
                 selectedAnswer = null
@@ -350,6 +352,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                 spanishCards = emptyList(),
                 russianCards = emptyList(),
                 answers = question.audioOptions ?: emptyList(),
+                isChecking = false,
                 selectedAnswer = null,
                 isPlaying = false,
                 currentPosition = 0f,
@@ -369,6 +372,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                 spanishCards = emptyList(),
                 russianCards = emptyList(),
                 answers = question.lecturaOptions ?: emptyList(),
+                isChecking = false,
                 selectedAnswer = null,
                 dragDropWords = emptyList(),
                 userDragDropAnswer = ""
@@ -513,7 +517,8 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     fun onAnswerClick(index: Int) {
         if (_uiState.value.isChecking) return
         val answer = _uiState.value.answers.getOrNull(index) ?: return
-        if (answer.state == NivelCardState.MATCHED) return
+        // Ответ уже обрабатывается или принят — повторный тап игнорируем (иначе засчитается дважды)
+        if (answer.state != NivelCardState.NORMAL) return
 
         viewModelScope.launch {
             _uiState.update { state ->
@@ -545,7 +550,9 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                         if (it.id == selectedId) it.copy(state = NivelCardState.SHOWING_SUCCESS) else it
                     },
                     correctCount = state.correctCount + 1,
-                    selectedAnswer = null
+                    selectedAnswer = null,
+                    // Блокируем все ответы до загрузки следующего вопроса (load*Question сбрасывает флаг)
+                    isChecking = true
                 )
             }
 
@@ -598,6 +605,10 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun onDragDropSubmit() {
+        // Повторное нажатие «проверить» не должно засчитывать ответ дважды
+        if (_uiState.value.isChecking) return
+        _uiState.update { it.copy(isChecking = true) }
+
         viewModelScope.launch {
             val userAnswer = _uiState.value.userDragDropAnswer.trim()
             val correctAnswer = _uiState.value.currentQuestion?.grammarCorrectAnswer?.trim() ?: ""

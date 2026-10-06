@@ -200,8 +200,8 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
 
         val answer = _uiState.value.answers.getOrNull(index) ?: return
 
-        // Игнорируем, если ответ уже выбран правильно
-        if (answer.state == AnswerState.MATCHED) return
+        // Ответ уже обрабатывается или принят — повторный тап игнорируем (иначе засчитается дважды)
+        if (answer.state != AnswerState.NORMAL) return
 
         // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
         if (!_uiState.value.isChecking) {
@@ -264,7 +264,9 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
                         if (it.id == selectedId) it.copy(state = AnswerState.SHOWING_SUCCESS) else it
                     },
                     correctCount = state.correctCount + 1,
-                    selectedAnswer = null
+                    selectedAnswer = null,
+                    // Блокируем все ответы до загрузки следующего вопроса (loadNextQuestion сбрасывает флаг)
+                    isChecking = true
                 )
             }
 

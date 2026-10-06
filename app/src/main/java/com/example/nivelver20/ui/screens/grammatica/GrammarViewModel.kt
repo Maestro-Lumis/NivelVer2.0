@@ -147,7 +147,15 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
 
                 loadNextQuestion()
 
-                _uiState.update { it.copy(isLoading = false, nivel = nivel) }
+                // Раундов не больше, чем реально загруженных вопросов — иначе после
+                // последнего вопроса тест «встаёт» (loadNextQuestion ничего не грузит).
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        nivel = nivel,
+                        totalRounds = allQuestions.size
+                    )
+                }
             } else {
                 _uiState.update {
                     it.copy(
@@ -254,7 +262,9 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
 
         val answer = _uiState.value.answers.getOrNull(index) ?: return
 
-        if (answer.state == GrammarAnswerState.MATCHED) return
+        // Ответ уже обрабатывается (красная вспышка / зелёная рамка) или принят — повторный тап игнорируем,
+        // иначе один и тот же ответ засчитывается несколько раз.
+        if (answer.state != GrammarAnswerState.NORMAL) return
 
         if (!_uiState.value.isChecking) {
             checkingJob?.cancel()
@@ -309,7 +319,9 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
                         if (it.id == selectedId) it.copy(state = GrammarAnswerState.SHOWING_SUCCESS) else it
                     },
                     correctCount = state.correctCount + 1,
-                    selectedAnswer = null
+                    selectedAnswer = null,
+                    // Блокируем все ответы до загрузки следующего вопроса (load* сбрасывают флаг)
+                    isChecking = true
                 )
             }
 
@@ -400,6 +412,10 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onDragDropSubmit() {
+        // Повторное нажатие «проверить» не должно засчитывать ответ дважды
+        if (_uiState.value.isChecking) return
+        _uiState.update { it.copy(isChecking = true) }
+
         viewModelScope.launch {
             val question = _uiState.value.currentQuestion ?: return@launch
             val userAnswer = _uiState.value.userDragDropAnswer.trim()
