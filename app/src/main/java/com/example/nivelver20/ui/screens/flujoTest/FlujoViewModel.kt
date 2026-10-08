@@ -443,7 +443,9 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onSpanishCardClick(index: Int) {
         val card = _uiState.value.spanishCards.getOrNull(index) ?: return
-        if (card.state == FlujoCardState.MATCHED) return
+        // MATCHED и SHOWING_SUCCESS (400 мс зелёной подсветки) игнорируем — иначе ту же верную пару
+        // можно засчитать повторно и накрутить vocabCorrectPairs выше порога
+        if (card.state == FlujoCardState.MATCHED || card.state == FlujoCardState.SHOWING_SUCCESS) return
 
         viewModelScope.launch {
             _uiState.update { state ->
@@ -468,7 +470,9 @@ class FlujoViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onRussianCardClick(index: Int) {
         val card = _uiState.value.russianCards.getOrNull(index) ?: return
-        if (card.state == FlujoCardState.MATCHED) return
+        // MATCHED и SHOWING_SUCCESS (400 мс зелёной подсветки) игнорируем — иначе ту же верную пару
+        // можно засчитать повторно и накрутить vocabCorrectPairs выше порога
+        if (card.state == FlujoCardState.MATCHED || card.state == FlujoCardState.SHOWING_SUCCESS) return
 
         viewModelScope.launch {
             _uiState.update { state ->

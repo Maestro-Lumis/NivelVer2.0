@@ -210,17 +210,6 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
         }
 
         viewModelScope.launch {
-            // Возвращаем только INCORRECT ответы в NORMAL
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.state == AnswerState.INCORRECT)
-                            it.copy(state = AnswerState.NORMAL)
-                        else it
-                    }
-                )
-            }
-
             // Снимаем выделение с предыдущего
             _uiState.update { state ->
                 val updatedAnswers = state.answers.map {
@@ -296,18 +285,9 @@ class LecturaViewModel(application: Application) : AndroidViewModel(application)
                     answers = state.answers.map {
                         if (it.id == selectedId) it.copy(state = AnswerState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
-                )
-            }
-
-            // Через 400мс возвращаем в обычное состояние
-            delay(400)
-
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = AnswerState.NORMAL) else it
-                    },
+                    incorrectCount = state.incorrectCount + 1,
+                    // Неправильный вариант остаётся красным и заблокированным: одну и ту же
+                    // ошибку повторным нажатием набить нельзя (onAnswerClick пропускает не-NORMAL).
                     selectedAnswer = null
                 )
             }

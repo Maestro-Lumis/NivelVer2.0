@@ -123,6 +123,10 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     var mediaPlayer: android.media.MediaPlayer? = null
     private var progressUpdateJob: Job? = null
 
+    // Неправильные пары (id испанской, id русской карточки), уже засчитанные как ошибка в этом вопросе:
+    // повторное нажатие той же неправильной пары ошибку второй раз не добавляет.
+    private val triedWrongPairs = mutableSetOf<Pair<Int, Int>>()
+
     init {
         val username = sessionManager.getCurrentUser()
         if (username != null) {
@@ -302,6 +306,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun loadVocabQuestion(question: NivelQuestion, index: Int) {
+        triedWrongPairs.clear()
         val words = question.vocabWords ?: emptyList()
 
         val spanishCards = words.mapIndexed { idx, (es, ru) ->
@@ -384,7 +389,8 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     fun onSpanishCardClick(index: Int) {
         if (_uiState.value.isChecking) return
         val card = _uiState.value.spanishCards.getOrNull(index) ?: return
-        if (card.state == NivelCardState.MATCHED) return
+        // MATCHED и SHOWING_SUCCESS (400 мс зелёной подсветки) игнорируем — иначе ту же верную пару можно засчитать повторно
+        if (card.state == NivelCardState.MATCHED || card.state == NivelCardState.SHOWING_SUCCESS) return
 
         viewModelScope.launch {
             _uiState.update { state ->
@@ -410,7 +416,8 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
     fun onRussianCardClick(index: Int) {
         if (_uiState.value.isChecking) return
         val card = _uiState.value.russianCards.getOrNull(index) ?: return
-        if (card.state == NivelCardState.MATCHED) return
+        // MATCHED и SHOWING_SUCCESS (400 мс зелёной подсветки) игнорируем — иначе ту же верную пару можно засчитать повторно
+        if (card.state == NivelCardState.MATCHED || card.state == NivelCardState.SHOWING_SUCCESS) return
 
         viewModelScope.launch {
             _uiState.update { state ->
@@ -473,6 +480,9 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
 
             checkVocabComplete()
         } else {
+            // Ошибка засчитывается только при первой попытке именно этой неправильной пары
+            val isNewMistake = triedWrongPairs.add(selectedSpanishId to selectedRussianId)
+
             _uiState.update { state ->
                 state.copy(
                     spanishCards = state.spanishCards.map {
@@ -481,7 +491,7 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                     russianCards = state.russianCards.map {
                         if (it.id == selectedRussianId) it.copy(state = NivelCardState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
+                    incorrectCount = state.incorrectCount + if (isNewMistake) 1 else 0
                 )
             }
 
@@ -525,7 +535,6 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                 state.copy(
                     answers = state.answers.map {
                         when {
-                            it.state == NivelCardState.INCORRECT -> it.copy(state = NivelCardState.NORMAL)
                             it.state == NivelCardState.SELECTED -> it.copy(state = NivelCardState.NORMAL)
                             it.id == answer.id -> it.copy(state = NivelCardState.SELECTED)
                             else -> it
@@ -575,17 +584,9 @@ class NivelViewModel(application: Application) : AndroidViewModel(application) {
                     answers = state.answers.map {
                         if (it.id == selectedId) it.copy(state = NivelCardState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
-                )
-            }
-
-            delay(400)
-
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = NivelCardState.NORMAL) else it
-                    },
+                    incorrectCount = state.incorrectCount + 1,
+                    // Неправильный вариант остаётся красным и заблокированным: одну и ту же
+                    // ошибку повторным нажатием набить нельзя (onAnswerClick пропускает не-NORMAL).
                     selectedAnswer = null
                 )
             }

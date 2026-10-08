@@ -223,16 +223,6 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.state == AudioAnswerState.INCORRECT)
-                            it.copy(state = AudioAnswerState.NORMAL)
-                        else it
-                    }
-                )
-            }
-
-            _uiState.update { state ->
                 val updatedAnswers = state.answers.map {
                     if (it.state == AudioAnswerState.SELECTED) it.copy(state = AudioAnswerState.NORMAL)
                     else it
@@ -295,17 +285,9 @@ class AudioViewModel(application: Application) : AndroidViewModel(application) {
                     answers = state.answers.map {
                         if (it.id == selectedId) it.copy(state = AudioAnswerState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
-                )
-            }
-
-            delay(400)
-
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = AudioAnswerState.NORMAL) else it
-                    },
+                    incorrectCount = state.incorrectCount + 1,
+                    // Неправильный вариант остаётся красным и заблокированным: одну и ту же
+                    // ошибку повторным нажатием набить нельзя (onAnswerClick пропускает не-NORMAL).
                     selectedAnswer = null
                 )
             }

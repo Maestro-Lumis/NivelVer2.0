@@ -69,6 +69,10 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
     private var checkingJob: Job? = null
 
+    // Неправильные пары (id испанской, id русской карточки), уже засчитанные как ошибка в этом наборе:
+    // повторное нажатие той же неправильной пары ошибку второй раз не добавляет.
+    private val triedWrongPairs = mutableSetOf<Pair<Int, Int>>()
+
     init {
         val username = sessionManager.getCurrentUser()
         if (username != null) {
@@ -154,6 +158,9 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
         usedWordsStartIndex = (usedWordsStartIndex + 8) % allAvailableWords.size
 
+        // Новый набор слов — забываем неправильные пары прошлого набора
+        triedWrongPairs.clear()
+
         // Создаем испанские карточки
         val spanishCards = wordsToUse.mapIndexed { index, word ->
             WordCard(
@@ -210,8 +217,9 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
         val card = _uiState.value.spanishWords.getOrNull(index) ?: return
 
-        // Игнорируем, если карточка уже сопоставлена
-        if (card.state == CardState.MATCHED) return
+        // Игнорируем, если карточка уже сопоставлена (в том числе в 400 мс зелёной подсветки —
+        // иначе ту же верную пару можно засчитать повторно)
+        if (card.state == CardState.MATCHED || card.state == CardState.SHOWING_SUCCESS) return
 
         // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
         if (!_uiState.value.isChecking) {
@@ -270,8 +278,9 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
 
         val card = _uiState.value.russianWords.getOrNull(index) ?: return
 
-        // Игнорируем, если карточка уже сопоставлена
-        if (card.state == CardState.MATCHED) return
+        // Игнорируем, если карточка уже сопоставлена (в том числе в 400 мс зелёной подсветки —
+        // иначе ту же верную пару можно засчитать повторно)
+        if (card.state == CardState.MATCHED || card.state == CardState.SHOWING_SUCCESS) return
 
         // ОТМЕНЯЕМ текущую анимацию ТОЛЬКО для неправильных ответов
         if (!_uiState.value.isChecking) {
@@ -375,6 +384,9 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
         } else {
             Log.d("VocabularioVM", "Incorrect match")
 
+            // Ошибка засчитывается только при первой попытке именно этой неправильной пары
+            val isNewMistake = triedWrongPairs.add(selectedSpanishId to selectedRussianId)
+
             // Показываем красную рамку
             _uiState.update { state ->
                 state.copy(
@@ -384,7 +396,7 @@ class VocabularioViewModel(application: Application) : AndroidViewModel(applicat
                     russianWords = state.russianWords.map {
                         if (it.id == selectedRussianId) it.copy(state = CardState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
+                    incorrectCount = state.incorrectCount + if (isNewMistake) 1 else 0
                 )
             }
 

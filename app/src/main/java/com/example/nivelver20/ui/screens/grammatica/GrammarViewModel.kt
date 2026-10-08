@@ -273,16 +273,6 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
 
         viewModelScope.launch {
             _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.state == GrammarAnswerState.INCORRECT)
-                            it.copy(state = GrammarAnswerState.NORMAL)
-                        else it
-                    }
-                )
-            }
-
-            _uiState.update { state ->
                 val updatedAnswers = state.answers.map {
                     if (it.state == GrammarAnswerState.SELECTED) it.copy(state = GrammarAnswerState.NORMAL)
                     else it
@@ -345,17 +335,9 @@ class GrammarViewModel(application: Application) : AndroidViewModel(application)
                     answers = state.answers.map {
                         if (it.id == selectedId) it.copy(state = GrammarAnswerState.INCORRECT) else it
                     },
-                    incorrectCount = state.incorrectCount + 1
-                )
-            }
-
-            delay(400)
-
-            _uiState.update { state ->
-                state.copy(
-                    answers = state.answers.map {
-                        if (it.id == selectedId) it.copy(state = GrammarAnswerState.NORMAL) else it
-                    },
+                    incorrectCount = state.incorrectCount + 1,
+                    // Неправильный вариант остаётся красным и заблокированным: одну и ту же
+                    // ошибку повторным нажатием набить нельзя (onAnswerClick пропускает не-NORMAL).
                     selectedAnswer = null
                 )
             }
