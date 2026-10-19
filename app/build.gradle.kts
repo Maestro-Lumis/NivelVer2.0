@@ -21,11 +21,17 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8: сжатие кода и ресурсов (в первую очередь вырезает неиспользуемые иконки
+            // material-icons-extended — без этого APK весит ~70 МБ).
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Подпись debug-ключом: приложение распространяется APK-файлом, а не через Play Store.
+            // Тот же ключ, что у прежних debug-сборок, поэтому новая версия ставится поверх старой.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 
